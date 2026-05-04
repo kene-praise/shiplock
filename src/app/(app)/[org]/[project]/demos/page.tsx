@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Video, Plus, CheckCircle2, Clock, XCircle, Send } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { sendDemoToClient } from "@/lib/actions/demos";
+import { sendDemoToClient, deleteDemoVideo } from "@/lib/actions/demos";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
@@ -122,22 +122,33 @@ export default async function DemosPage({ params }: Props) {
                   </div>
 
                   <div className="flex flex-col items-end gap-2 shrink-0">
+                    <div className="flex gap-2 items-center">
+                      <form action={deleteDemoVideo.bind(null, demo.id, org, project)}>
+                        <button
+                          type="submit"
+                          className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 transition-colors"
+                          title="Delete Demo"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                      {!demo.sentToClient && (
+                        <form action={sendAction}>
+                          <button
+                            type="submit"
+                            className="flex items-center gap-1.5 text-xs text-primary border border-primary/30 hover:bg-primary/10 px-2.5 py-1 rounded-md transition-colors"
+                          >
+                            <Send className="h-3 w-3" />
+                            Send to client
+                          </button>
+                        </form>
+                      )}
+                    </div>
                     {sCfg && demo.sentToClient && (
                       <span className={cn("flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium", sCfg.color)}>
                         <Icon className="h-3 w-3" />
                         {sCfg.label}
                       </span>
-                    )}
-                    {!demo.sentToClient && (
-                      <form action={sendAction}>
-                        <button
-                          type="submit"
-                          className="flex items-center gap-1.5 text-xs text-primary border border-primary/30 hover:bg-primary/10 px-2.5 py-1 rounded-md transition-colors"
-                        >
-                          <Send className="h-3 w-3" />
-                          Send to client
-                        </button>
-                      </form>
                     )}
                     {demo.sentAt && (
                       <p className="text-[10px] text-muted-foreground">

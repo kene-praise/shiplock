@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { sendRequirementForReview } from "@/lib/actions/requirements";
+import { sendRequirementForReview, deleteRequirement } from "@/lib/actions/requirements";
 
 interface Props {
   params: Promise<{ org: string; project: string; id: string }>;
@@ -107,23 +107,33 @@ export default async function RequirementDetailPage({ params }: Props) {
               </span>
             )}
           </div>
-          {req.status === "draft" && (
-            <form action={sendRequirementForReview.bind(null, req.id, org, project)}>
+          <div className="flex items-center gap-2 shrink-0">
+            <form action={deleteRequirement.bind(null, req.id, org, project)}>
               <button
                 type="submit"
-                className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors shrink-0"
+                className="flex items-center gap-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-1.5 rounded-md transition-colors"
               >
-                <Send className="h-3.5 w-3.5" />
-                Send for review
+                Delete
               </button>
             </form>
-          )}
-          {req.status === "pending_approval" && (
-            <div className="flex items-center gap-1.5 text-xs text-yellow-400 shrink-0">
-              <Clock className="h-3.5 w-3.5" />
-              Awaiting client response
-            </div>
-          )}
+            {req.status === "draft" && (
+              <form action={sendRequirementForReview.bind(null, req.id, org, project)}>
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors shrink-0"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send for review
+                </button>
+              </form>
+            )}
+            {req.status === "pending_approval" && (
+              <div className="flex items-center gap-1.5 text-xs text-yellow-400 shrink-0">
+                <Clock className="h-3.5 w-3.5" />
+                Awaiting client response
+              </div>
+            )}
+          </div>
         </div>
         <h1 className="text-xl font-bold text-foreground">{req.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">{req.description}</p>

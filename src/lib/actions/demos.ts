@@ -1,12 +1,14 @@
 "use server";
 
 import { db } from "@/db";
-import { demoVideos, clientPings, users, projects } from "@/db/schema";
+import { demoVideos, clientPings, users, projects, auditLogs, dodItems, clientReviews } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendDemoReviewEmail } from "@/lib/email";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function createDemo(
   projectId: string,
@@ -107,4 +109,40 @@ export async function sendDemoToClient(demoId: string, org: string, project: str
   );
 
   revalidatePath(`/${org}/${project}/demos`);
+}
+
+export async function deleteDemoVideo(
+  demoId: string,
+  org: string,
+  project: string
+) {
+  const session = await auth.api.getSession({ headers: headers() });
+  const userId = session?.user?.id;
+
+  const [demo] = await db
+    .select()
+    .from(demoVideos)
+    .where(eq(demoVideos.id, demoId))
+    .limit(1);
+    
+  if (!demo) return;
+
+  // Clear references to prevent foreign key errors
+  await db.update(dodItems).set({ demoVideoId: null }).where(eq(dodItems.demoVideoId, demoId));
+  await db.delete(clientReviews).where(eq(clientReviews.demoVideoId, demoId));
+
+  // Insert audit log
+  await db.insert(auditLogs).values({
+    projectId: demo.projectId,
+    userId: userId || null,
+    action: "deleted",
+    entityType: "demo_video",
+    entityId: demo.id as string,
+    oldValue: demo,
+  });
+
+  await db.delete(demoVideos).where(eq(demoVideos.id, demoId));
+
+  revalidatePath(`/${org}/${project}/demos`);
+  redirect(`/${org}/${project}/demos`);
 }

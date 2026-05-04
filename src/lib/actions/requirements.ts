@@ -1,12 +1,14 @@
 "use server";
 
 import { db } from "@/db";
-import { requirements, clientPings, users, projects } from "@/db/schema";
+import { requirements, clientPings, users, projects, auditLogs, tasks, demoVideos, clientReviews } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendRequirementReviewEmail } from "@/lib/email";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
@@ -125,4 +127,41 @@ export async function sendRequirementForReview(
 
   revalidatePath(`/${org}/${project}/requirements`);
   revalidatePath(`/${org}/${project}/requirements/${requirementId}`);
+}
+
+export async function deleteRequirement(
+  requirementId: string,
+  org: string,
+  project: string
+) {
+  const session = await auth.api.getSession({ headers: headers() });
+  const userId = session?.user?.id;
+
+  const [req] = await db
+    .select()
+    .from(requirements)
+    .where(eq(requirements.id, requirementId))
+    .limit(1);
+    
+  if (!req) return;
+
+  // Clear references to prevent foreign key errors
+  await db.update(tasks).set({ requirementId: null }).where(eq(tasks.requirementId, requirementId));
+  await db.update(demoVideos).set({ requirementId: null }).where(eq(demoVideos.requirementId, requirementId));
+  await db.delete(clientReviews).where(eq(clientReviews.requirementId, requirementId));
+
+  // Insert audit log
+  await db.insert(auditLogs).values({
+    projectId: req.projectId,
+    userId: userId || null,
+    action: "deleted",
+    entityType: "requirement",
+    entityId: req.id as string,
+    oldValue: req,
+  });
+
+  await db.delete(requirements).where(eq(requirements.id, requirementId));
+
+  revalidatePath(`/${org}/${project}/requirements`);
+  redirect(`/${org}/${project}/requirements`);
 }
