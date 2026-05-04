@@ -1,0 +1,30 @@
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "@/db";
+import { authUsers, authSessions, authAccounts, authVerifications } from "@/db/schema";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: {
+      user: authUsers,
+      session: authSessions,
+      account: authAccounts,
+      verification: authVerifications,
+    },
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
+    updateAge: 60 * 60 * 24, // refresh daily
+  },
+  trustedOrigins:
+    process.env.NODE_ENV === "development"
+      ? ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+      : [process.env.BETTER_AUTH_URL!],
+});
+
+export type Session = typeof auth.$Infer.Session;
+export type User = typeof auth.$Infer.Session.user;
