@@ -6,6 +6,7 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function sendEmailPayload(payload: any) {
   if (process.env.NODE_ENV === "development") {
     // Resend's testing address only allows sending to your verified email
