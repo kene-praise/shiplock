@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Clock, TrendingUp, Zap, GitBranch, FileCheck, Layers, CircleCheck, CircleDot, CircleMinus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, TrendingUp, Zap, Layers, CircleCheck, CircleDot, CircleMinus } from "lucide-react";
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
 
