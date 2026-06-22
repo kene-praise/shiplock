@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/review") ||
+    pathname.startsWith("/preview") ||
     pathname.startsWith("/api/auth") ||
     pathname === "/"
   ) {
