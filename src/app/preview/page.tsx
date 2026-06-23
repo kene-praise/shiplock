@@ -216,51 +216,6 @@ function VelocityChart({ points, weeks, color }: {
   );
 }
 
-function DonutRing({ pct, color, size = 72 }: { pct: number; color: string; size?: number }) {
-  const r = size / 2 - 9, c = size / 2, circ = 2 * Math.PI * r;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={c} cy={c} r={r} fill="none" stroke="#F3F4F6" strokeWidth="7" />
-      <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="7"
-        strokeDasharray={`${(pct / 100) * circ} ${circ}`}
-        strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} />
-      <text x={c} y={c + 5} textAnchor="middle" fontSize="13" fontWeight="600" fill="#111827">{pct}%</text>
-    </svg>
-  );
-}
-
-// Multi-segment donut for scope breakdown
-function ScopeDonut({ segments, size = 48 }: {
-  segments: { n: number; color: string }[];
-  size?: number;
-}) {
-  const total = Math.max(1, segments.reduce((s, c) => s + c.n, 0));
-  const r = size / 2 - 7, cx = size / 2, cy = size / 2;
-  const toXY = (deg: number) => ({
-    x: cx + r * Math.cos(((deg - 90) * Math.PI) / 180),
-    y: cy + r * Math.sin(((deg - 90) * Math.PI) / 180),
-  });
-  let startDeg = 0;
-  const arcs = segments.filter(s => s.n > 0).map(s => {
-    const sweep = (s.n / total) * 360;
-    const endDeg = startDeg + sweep - 2;
-    const { x: x1, y: y1 } = toXY(startDeg);
-    const { x: x2, y: y2 } = toXY(endDeg);
-    const large = sweep > 180 ? 1 : 0;
-    const d = `M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)}`;
-    startDeg += sweep;
-    return { d, color: s.color };
-  });
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F3F4F6" strokeWidth="6" />
-      {arcs.map((arc, i) => (
-        <path key={i} d={arc.d} fill="none" stroke={arc.color} strokeWidth="6" strokeLinecap="butt" />
-      ))}
-      <text x={cx} y={cy + 1} textAnchor="middle" fontSize="11" fontWeight="600" fill="#111827" dominantBaseline="middle">{total}</text>
-    </svg>
-  );
-}
 
 // ─── UI primitives ────────────────────────────────────────────────────────────
 
@@ -355,7 +310,6 @@ function DashboardSection() {
   const pending  = SCOPE_CHANGES.filter(c => c.status === "pending").length;
   const accepted = SCOPE_CHANGES.filter(c => c.status === "accepted").length;
   const rejected = SCOPE_CHANGES.filter(c => c.status === "rejected").length;
-  const deferred = SCOPE_CHANGES.filter(c => c.status === "deferred").length;
 
   return (
     <>
