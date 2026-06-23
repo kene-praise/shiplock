@@ -76,6 +76,26 @@ Located in `src/inngest/`:
 - `escalation-72h` — hourly, auto-escalates past 72h
 - `standup-reminder` — daily 9AM, reminds builders
 
+## /preview route — portfolio showcase
+
+`/preview?section=` is a **separate, standalone route** used exclusively as an iframe embed in Praise's portfolio. It is **not** part of the main ShipLock app UI.
+
+Design direction: light mode, data-dense, inspired by the digitalencodeGRC_web repo (`/Users/kene/Documents/GitHub/digitalencodeGRC_web`).
+
+Key rules for this route:
+- **Always light mode** — ignore the app's dark-first tokens. Force light in `globals.css` via `@media (prefers-color-scheme: dark) { :root { ... } }` to survive iframe dark-mode injection.
+- **Cards**: `bg-white ring-1 ring-black/[0.06] rounded-xl` — no border, just a shadow ring.
+- **Typography**: `font-semibold` max (600 weight). No `font-bold` or `font-black`. Values use `tabular-nums tracking-tight`.
+- **Labels**: `text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400`
+- **KPI values**: `text-[28px] font-semibold tabular-nums tracking-tight text-gray-900`
+- **Charts**: Pure SVG — no recharts. Bar charts + line sparklines + donut rings, all with faint `rgba(0,0,0,0.06)` horizontal grid lines.
+- **Sidebar**: `w-[200px] bg-white border-r border-gray-100`, hidden on mobile (`hidden sm:flex`). Active nav item uses a pill background (`rgba(43,127,255,0.09)`), not a left-border indicator.
+- **Tone system**: `blue / green / amber / red / gray` — each with a `fg` color and a muted `bg` tint. Used for badges and KPI card icons.
+- **Badges**: small colored dot + label text, muted tint background.
+- **No portfolio changes until verified locally** — iterate in this repo at `localhost:3000/preview?section=` first.
+
+Sections: `dashboard`, `scope-changes`, `requirements`, `tasks`. All seeded with demo data (Kola POS System). Middleware bypassed for unauthenticated access.
+
 ## Decision logger
 Silently log meaningful design/product decisions to `.claude/decision_log.md` during every session.
 
