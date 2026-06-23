@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, GitBranch, FileCheck, CheckSquare,
-  AlertTriangle, CheckCircle2, TrendingUp, Clock, Lock, Layers,
+  AlertTriangle, CheckCircle2, TrendingUp, Clock, Layers,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -80,39 +80,138 @@ type ToneKey = keyof typeof T;
 
 // ─── SVG charts ───────────────────────────────────────────────────────────────
 
-function BarChart({ points, color, height = 56 }: { points: number[]; color: string; height?: number }) {
+// Generic bar chart — annotate=true adds "+N" labels above non-zero bars
+function BarChart({ points, color, height = 56, annotate = false }: {
+  points: number[]; color: string; height?: number; annotate?: boolean;
+}) {
   const W = 240, H = height;
   const max = Math.max(...points, 1);
-  const bw  = Math.max(3, (W / points.length) * 0.55);
   const gap = W / points.length;
+  const bw  = Math.max(4, gap * 0.54);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" style={{ display: "block" }}>
-      {[0.25, 0.5, 0.75, 1].map(p => (
-        <line key={p} x1="0" y1={H - H * p} x2={W} y2={H - H * p} stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none" style={{ display: "block" }}>
+      {[0.33, 0.67, 1].map(p => (
+        <line key={p} x1="0" y1={H - (H - 8) * p - 4} x2={W} y2={H - (H - 8) * p - 4}
+          stroke="rgba(0,0,0,0.05)" strokeWidth="0.75" />
       ))}
       {points.map((v, i) => {
-        const bh   = v === 0 ? 2 : Math.max(4, (v / max) * (H - 4));
-        const fill = v === 0 ? "#E9EAEC" : i === points.length - 1 ? color : `${color}55`;
-        return <rect key={i} x={i * gap + (gap - bw) / 2} y={H - bh} width={bw} height={bh} rx="2" fill={fill} />;
+        const bh   = v === 0 ? 2 : Math.max(5, (v / max) * (H - 10));
+        const x    = i * gap + (gap - bw) / 2;
+        const isLast = i === points.length - 1;
+        const fill = v === 0 ? "rgba(0,0,0,0.07)" : isLast ? color : `${color}80`;
+        return (
+          <g key={i}>
+            <rect x={x} y={H - bh} width={bw} height={bh} rx="2" fill={fill} />
+            {annotate && v > 0 && (
+              <text x={x + bw / 2} y={H - bh - 3} textAnchor="middle" fontSize="7.5"
+                fill={isLast ? color : `${color}bb`} fontFamily="system-ui" fontWeight="700">+{v}</text>
+            )}
+          </g>
+        );
       })}
     </svg>
   );
 }
 
+// Line chart with gradient area fill and halo end-dot
 function LineChart({ points, color, height = 56 }: { points: number[]; color: string; height?: number }) {
   const W = 240, H = height;
   const max = Math.max(...points, 1);
-  const yFor = (v: number) => H - (v / max) * (H - 10) - 5;
-  const coords = points.map((v, i) => `${(i / (points.length - 1)) * W},${yFor(v)}`);
-  const last   = coords[coords.length - 1].split(",");
+  const min = Math.min(...points);
+  const range = max - min || 1;
+  const yFor  = (v: number) => H - ((v - min) / range) * (H - 16) - 8;
+  const coords = points.map((v, i) => ({ x: (i / (points.length - 1)) * W, y: yFor(v) }));
+  const pathD  = `M${coords.map(c => `${c.x},${c.y}`).join(" L")}`;
+  const last   = coords[coords.length - 1];
+  const uid    = `lg${color.replace(/[^a-z0-9]/gi, "")}${height}`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" style={{ display: "block" }}>
-      {[0.25, 0.5, 0.75, 1].map(p => (
-        <line key={p} x1="0" y1={yFor(max * p)} x2={W} y2={yFor(max * p)} stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none" style={{ display: "block" }}>
+      <defs>
+        <linearGradient id={uid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0.33, 0.67, 1].map(p => (
+        <line key={p} x1="0" y1={H - (H - 8) * p - 4} x2={W} y2={H - (H - 8) * p - 4}
+          stroke="rgba(0,0,0,0.05)" strokeWidth="0.75" />
       ))}
-      <path d={`M${coords.join(" L")} L${W},${H} L0,${H} Z`} fill={`${color}15`} />
-      <path d={`M${coords.join(" L")}`} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={last[0]} cy={last[1]} r="3" fill={color} />
+      <path d={`${pathD} L${W},${H} L0,${H} Z`} fill={`url(#${uid})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="5.5" fill={color} opacity="0.15" />
+      <circle cx={last.x} cy={last.y} r="2.75" fill={color} />
+      <circle cx={last.x} cy={last.y} r="1.2" fill="white" />
+    </svg>
+  );
+}
+
+// Velocity chart — 4 weeks of daily bars with week bands, avg line, and week labels
+function VelocityChart({ points, weeks, color }: {
+  points: number[];
+  weeks: { week: string; done: number; total: number }[];
+  color: string;
+}) {
+  const W = 800, H = 96;
+  const LABEL_ROW = 16; // reserved at bottom for week labels
+  const chartH = H - LABEL_ROW;
+  const max = Math.max(...points, 1);
+  const weekW = W / 4;
+  const dayW  = weekW / 7;
+  const bw    = Math.max(5, dayW * 0.62);
+  const active = points.filter(Boolean);
+  const avg   = active.length ? active.reduce((a, b) => a + b, 0) / active.length : 0;
+  const avgY  = chartH - (avg / max) * (chartH - 12) - 6;
+  const weekOpacity = [1, 0.82, 0.58, 0.22];
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none" style={{ display: "block" }}>
+      {/* Alternating week bands */}
+      {[0, 2].map(i => (
+        <rect key={i} x={i * weekW + 1} y={0} width={weekW - 2} height={chartH} fill="rgba(0,0,0,0.018)" />
+      ))}
+
+      {/* Grid lines */}
+      {[0.33, 0.67, 1].map(p => (
+        <line key={p} x1="0" y1={chartH - (chartH - 10) * p - 5} x2={W} y2={chartH - (chartH - 10) * p - 5}
+          stroke="rgba(0,0,0,0.05)" strokeWidth="0.75" />
+      ))}
+
+      {/* Bars */}
+      {points.map((v, i) => {
+        const weekIdx = Math.floor(i / 7);
+        const bh  = v === 0 ? 2 : Math.max(6, (v / max) * (chartH - 10));
+        const x   = i * dayW + (dayW - bw) / 2;
+        const fill = v === 0 ? "rgba(0,0,0,0.07)" : color;
+        const op   = v === 0 ? 1 : weekOpacity[weekIdx];
+        return <rect key={i} x={x} y={chartH - bh} width={bw} height={bh} rx="2.5" fill={fill} opacity={op} />;
+      })}
+
+      {/* Average dashed line */}
+      <line x1="0" y1={avgY} x2={W * 0.72} y2={avgY} stroke={color} strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+      <rect x="2" y={avgY - 8} width="44" height="11" rx="2.5" fill="white" />
+      <text x="5" y={avgY + 1.5} fontSize="8.5" fill={color} fontFamily="system-ui, -apple-system" fontWeight="600" opacity="0.65">
+        avg {avg.toFixed(1)}/day
+      </text>
+
+      {/* Week dividers */}
+      {[1, 2, 3].map(i => (
+        <line key={i} x1={i * weekW} y1="0" x2={i * weekW} y2={chartH}
+          stroke="rgba(0,0,0,0.09)" strokeWidth="0.75" />
+      ))}
+
+      {/* Bottom label row: week name + score */}
+      {weeks.map((w, i) => {
+        const pct = w.done / w.total;
+        const scoreColor = pct >= 1 ? T.green.fg : pct >= 0.5 ? color : pct > 0 ? T.amber.fg : T.gray.fg;
+        return (
+          <g key={w.week}>
+            <text x={i * weekW + 5} y={H - 3} fontSize="9" fill="rgba(0,0,0,0.28)"
+              fontFamily="system-ui" fontWeight="600">{w.week}</text>
+            <text x={i * weekW + weekW - 5} y={H - 3} fontSize="9" fill={scoreColor}
+              fontFamily="system-ui" fontWeight="700" textAnchor="end">{w.done}/{w.total}</text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -126,6 +225,39 @@ function DonutRing({ pct, color, size = 72 }: { pct: number; color: string; size
         strokeDasharray={`${(pct / 100) * circ} ${circ}`}
         strokeLinecap="round" transform={`rotate(-90 ${c} ${c})`} />
       <text x={c} y={c + 5} textAnchor="middle" fontSize="13" fontWeight="600" fill="#111827">{pct}%</text>
+    </svg>
+  );
+}
+
+// Multi-segment donut for scope breakdown
+function ScopeDonut({ segments, size = 48 }: {
+  segments: { n: number; color: string }[];
+  size?: number;
+}) {
+  const total = Math.max(1, segments.reduce((s, c) => s + c.n, 0));
+  const r = size / 2 - 7, cx = size / 2, cy = size / 2;
+  const toXY = (deg: number) => ({
+    x: cx + r * Math.cos(((deg - 90) * Math.PI) / 180),
+    y: cy + r * Math.sin(((deg - 90) * Math.PI) / 180),
+  });
+  let startDeg = 0;
+  const arcs = segments.filter(s => s.n > 0).map(s => {
+    const sweep = (s.n / total) * 360;
+    const endDeg = startDeg + sweep - 2;
+    const { x: x1, y: y1 } = toXY(startDeg);
+    const { x: x2, y: y2 } = toXY(endDeg);
+    const large = sweep > 180 ? 1 : 0;
+    const d = `M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)}`;
+    startDeg += sweep;
+    return { d, color: s.color };
+  });
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#F3F4F6" strokeWidth="6" />
+      {arcs.map((arc, i) => (
+        <path key={i} d={arc.d} fill="none" stroke={arc.color} strokeWidth="6" strokeLinecap="butt" />
+      ))}
+      <text x={cx} y={cy + 1} textAnchor="middle" fontSize="11" fontWeight="600" fill="#111827" dominantBaseline="middle">{total}</text>
     </svg>
   );
 }
@@ -153,9 +285,8 @@ function KpiCard({ icon: Icon, label, value, sub, tone = "blue" }: {
 function Badge({ label, tone }: { label: string; tone: ToneKey }) {
   const t = T[tone];
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-md"
+    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md"
       style={{ background: t.bg, color: t.fg }}>
-      <span className="size-1.5 rounded-full shrink-0" style={{ background: t.fg }} />
       {label}
     </span>
   );
@@ -177,11 +308,11 @@ const NAV: { key: string; label: string; Icon: LucideIcon }[] = [
 function Sidebar({ active }: { active: string }) {
   return (
     <aside className="hidden sm:flex w-[200px] flex-col bg-white border-r border-gray-100 h-full shrink-0">
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-        <div className="size-7 rounded-lg flex items-center justify-center" style={{ background: T.blue.fg }}>
-          <Lock size={13} color="#fff" strokeWidth={2.5} />
-        </div>
-        <span className="text-[15px] font-semibold tracking-tight text-gray-900">ShipLock</span>
+      <div className="px-5 py-5">
+        <span className="text-[16px] font-semibold tracking-tight text-gray-900"
+          style={{ fontFamily: '-apple-system, "SF Pro Display", system-ui, sans-serif' }}>
+          ShipLock
+        </span>
       </div>
       <nav className="flex-1 flex flex-col px-3 py-4 gap-0.5 min-h-0">
         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400 px-3 mb-1.5">Project</span>
@@ -224,6 +355,7 @@ function DashboardSection() {
   const pending  = SCOPE_CHANGES.filter(c => c.status === "pending").length;
   const accepted = SCOPE_CHANGES.filter(c => c.status === "accepted").length;
   const rejected = SCOPE_CHANGES.filter(c => c.status === "rejected").length;
+  const deferred = SCOPE_CHANGES.filter(c => c.status === "deferred").length;
 
   return (
     <>
@@ -238,53 +370,52 @@ function DashboardSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_176px] gap-3">
           {/* Velocity card */}
-          <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <SectionLabel>Sprint velocity · 28d</SectionLabel>
-                <div className="flex items-end gap-2 mt-1.5">
-                  <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
-                    {TASK_STATS.done} tasks
-                  </span>
-                  <span className="text-[12px] text-gray-400 mb-0.5">{COMPLETION_PCT}% of {TASK_STATS.total}</span>
-                </div>
+          <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5 flex flex-col">
+            <div>
+              <SectionLabel>Sprint velocity · 28d</SectionLabel>
+              <p className="text-[10px] text-gray-400 mt-0.5">Each bar = 1 day · grouped by week</p>
+              <div className="flex items-end gap-2 mt-2">
+                <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
+                  {TASK_STATS.done} tasks
+                </span>
+                <span className="text-[12px] text-gray-400 mb-0.5">{COMPLETION_PCT}% of {TASK_STATS.total}</span>
               </div>
-              <DonutRing pct={COMPLETION_PCT} color={T.blue.fg} size={68} />
             </div>
-            <div style={{ height: 52 }}>
-              <BarChart points={DAILY_VELOCITY} color={T.blue.fg} height={52} />
-            </div>
-            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
-              {WEEK_DATA.map(w => (
-                <div key={w.week} className="flex-1 flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-gray-400">{w.week}</span>
-                    <span className="text-[10px] font-semibold tabular-nums text-gray-700">{w.done}/{w.total}</span>
-                  </div>
-                  <div className="h-1 rounded-full bg-gray-100">
-                    <div className="h-full rounded-full" style={{ width: `${(w.done / w.total) * 100}%`, background: T.blue.fg }} />
-                  </div>
-                </div>
-              ))}
+            <div className="flex-1" />
+            <div style={{ height: 96, overflow: "hidden" }}>
+              <VelocityChart points={DAILY_VELOCITY} weeks={WEEK_DATA} color={T.blue.fg} />
             </div>
           </div>
 
           {/* Scope creep card */}
-          <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5 flex flex-col">
-            <SectionLabel>Scope creep · 14d</SectionLabel>
-            <div className="mt-2">
-              <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
-                +{SCOPE_CHANGES.length}
-              </span>
-              <p className="text-[12px] text-gray-400 mt-1">items added</p>
+          <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-4 flex flex-col">
+            {/* Top: headings */}
+            <div>
+              <SectionLabel>Scope creep · 7d</SectionLabel>
+              <p className="text-[10px] text-gray-400 mt-0.5">Each bar = 1 day</p>
+              <div className="mt-2.5">
+                <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
+                  +{SCOPE_CHANGES.length}
+                </span>
+                <p className="text-[11px] text-gray-400 mt-0.5">items added</p>
+              </div>
             </div>
-            <div className="mt-3" style={{ height: 44 }}>
-              <BarChart points={DAILY_SCOPE} color={T.red.fg} height={44} />
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Bar chart */}
+            <div className="mb-3" style={{ height: 56, overflow: "hidden" }}>
+              <BarChart points={DAILY_SCOPE.slice(-7)} color={T.red.fg} height={56} annotate />
             </div>
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
-              {[{ label: "Pending",  n: pending,  tone: "amber" as ToneKey },
+
+            {/* Badge rows */}
+            <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
+              {([
+                { label: "Pending",  n: pending,  tone: "amber" as ToneKey },
                 { label: "Accepted", n: accepted, tone: "green" as ToneKey },
-                { label: "Rejected", n: rejected, tone: "red"   as ToneKey }].map(r => (
+                { label: "Rejected", n: rejected, tone: "red"   as ToneKey },
+              ]).map(r => (
                 <div key={r.label} className="flex items-center justify-between">
                   <span className="text-[11px] text-gray-500">{r.label}</span>
                   <Badge label={`${r.n}`} tone={r.tone} />
@@ -374,20 +505,21 @@ function ScopeChangesSection() {
 
         {/* Creep trend */}
         <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-3">
             <div>
               <SectionLabel>Creep trend · 14d</SectionLabel>
-              <div className="flex items-end gap-2 mt-1.5">
+              <p className="text-[10px] text-gray-400 mt-0.5">Each bar = 1 day · height = items added</p>
+              <div className="flex items-end gap-2 mt-2">
                 <span className="text-[24px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
                   +{DAILY_SCOPE.filter(Boolean).length}
                 </span>
-                <span className="text-[12px] text-gray-400 mb-0.5">scope additions</span>
+                <span className="text-[12px] text-gray-400 mb-0.5">days with new scope</span>
               </div>
             </div>
             <Badge label="Scope grew 300%" tone="red" />
           </div>
-          <div style={{ height: 48 }}>
-            <BarChart points={DAILY_SCOPE} color={T.red.fg} height={48} />
+          <div style={{ height: 68, overflow: "hidden" }}>
+            <BarChart points={DAILY_SCOPE} color={T.red.fg} height={68} annotate />
           </div>
         </div>
 
@@ -455,20 +587,18 @@ function RequirementsSection() {
 
         {/* Approval overview */}
         <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <SectionLabel>Approval rate</SectionLabel>
-              <div className="flex items-end gap-2 mt-1.5">
-                <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
-                  {approvalPct}%
-                </span>
-                <span className="text-[12px] text-gray-400 mb-0.5">client-approved</span>
-              </div>
+          <div className="mb-3">
+            <SectionLabel>Approval rate</SectionLabel>
+            <p className="text-[10px] text-gray-400 mt-0.5">Running total of approved requirements over time</p>
+            <div className="flex items-end gap-2 mt-2">
+              <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
+                {approvalPct}%
+              </span>
+              <span className="text-[12px] text-gray-400 mb-0.5">client-approved</span>
             </div>
-            <DonutRing pct={approvalPct} color={T.green.fg} size={68} />
           </div>
-          <div style={{ height: 48 }}>
-            <LineChart points={approvalTrend} color={T.green.fg} height={48} />
+          <div style={{ height: 64, overflow: "hidden" }}>
+            <LineChart points={approvalTrend} color={T.green.fg} height={64} />
           </div>
           <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
             {metaRows.map(r => (
@@ -550,26 +680,28 @@ function TasksSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5">
             <SectionLabel>Completion trend · 14d</SectionLabel>
-            <div className="flex items-end gap-2 mt-2 mb-4">
+            <p className="text-[10px] text-gray-400 mt-0.5">Cumulative tasks done over time</p>
+            <div className="flex items-end gap-2 mt-2 mb-3">
               <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
                 {TASK_STATS.done}
               </span>
               <span className="text-[12px] text-gray-400 mb-0.5">tasks · {COMPLETION_PCT}%</span>
             </div>
-            <div style={{ height: 52 }}>
-              <LineChart points={completionTrend} color={T.green.fg} height={52} />
+            <div style={{ height: 72, overflow: "hidden" }}>
+              <LineChart points={completionTrend} color={T.green.fg} height={72} />
             </div>
           </div>
           <div className="bg-white ring-1 ring-black/[0.06] rounded-xl p-5">
             <SectionLabel>Daily velocity · 28d</SectionLabel>
-            <div className="flex items-end gap-2 mt-2 mb-4">
+            <p className="text-[10px] text-gray-400 mt-0.5">Each bar = 1 day · recent = darker</p>
+            <div className="flex items-end gap-2 mt-2 mb-3">
               <span className="text-[28px] font-semibold tabular-nums tracking-tight text-gray-900 leading-none">
                 {DAILY_VELOCITY.reduce((a, b) => a + b, 0)}
               </span>
               <span className="text-[12px] text-gray-400 mb-0.5">tasks shipped</span>
             </div>
-            <div style={{ height: 52 }}>
-              <BarChart points={DAILY_VELOCITY} color={T.blue.fg} height={52} />
+            <div style={{ height: 72, overflow: "hidden" }}>
+              <BarChart points={DAILY_VELOCITY} color={T.blue.fg} height={72} />
             </div>
           </div>
         </div>
@@ -617,7 +749,7 @@ interface PreviewPageProps {
 }
 
 export default async function PreviewPage({ searchParams }: PreviewPageProps) {
-  const { section = "dashboard" } = await searchParams;
+  const { section = "tasks" } = await searchParams;
 
   const content: Record<string, React.ReactNode> = {
     dashboard:       <DashboardSection />,
@@ -627,7 +759,7 @@ export default async function PreviewPage({ searchParams }: PreviewPageProps) {
   };
 
   return (
-    <div className="flex bg-gray-50 overflow-hidden" style={{ minHeight: "100vh" }}>
+    <div className="flex bg-gray-50 overflow-hidden" style={{ height: "100vh" }}>
       <Sidebar active={section} />
       <div className="flex-1 flex flex-col min-w-0">
         {content[section] ?? content.dashboard}
