@@ -1,5 +1,6 @@
 import {
-  LayoutDashboard, GitBranch, FileCheck, CheckSquare,
+  LayoutDashboard, GitBranch, FileCheck, CheckSquare, // preview route
+
   AlertTriangle, CheckCircle2, TrendingUp, Clock, Layers,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
