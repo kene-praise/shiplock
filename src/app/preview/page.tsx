@@ -84,9 +84,9 @@ function DashboardSection() {
         <p className="text-sm text-muted-foreground mt-0.5">MVP deadline: {PROJECT.deadline}</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Progress ring — 2×2 */}
-        <div className="col-span-2 row-span-2 rounded-2xl border border-border bg-card p-6 flex flex-col justify-between min-h-[200px]">
+        <div className="col-span-2 sm:row-span-2 rounded-2xl border border-border bg-card p-6 flex flex-col justify-between min-h-[180px]">
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Overall Progress</p>
             <p className="text-sm text-muted-foreground mt-0.5">{TASK_STATS.done} of {TASK_STATS.total} tasks complete</p>
@@ -142,9 +142,9 @@ function DashboardSection() {
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Blocked items */}
-        <div className="col-span-2 rounded-2xl border border-border bg-card p-5">
+        <div className="sm:col-span-2 rounded-2xl border border-border bg-card p-5">
           <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
             Blocked Items
@@ -269,7 +269,7 @@ function RequirementsSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
           { icon: Layers,      iconBg: "bg-primary/10",  iconColor: "text-primary",     value: mvpCount,      label: "MVP scope" },
           { icon: CheckCircle2,iconBg: "bg-green-50",    iconColor: "text-green-600",   value: approvedCount, label: "Approved" },
@@ -294,7 +294,7 @@ function RequirementsSection() {
             <tr className="border-b border-border bg-muted/40">
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ref</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Requirement</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Scope</th>
+              <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Scope</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
             </tr>
           </thead>
@@ -308,7 +308,7 @@ function RequirementsSection() {
                 <tr key={req.refCode} className="hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{req.refCode}</td>
                   <td className="px-4 py-3 font-medium text-foreground">{req.title}</td>
-                  <td className="px-4 py-3">
+                  <td className="hidden sm:table-cell px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-md border font-medium ${cls}`}>{clsLabel}</span>
                   </td>
                   <td className="px-4 py-3">
@@ -359,7 +359,7 @@ function TasksSection() {
         <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
         {columns.map((col) => (
           <div key={col.key} className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
