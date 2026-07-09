@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react";
 import { Lock, Plus, Search, ArrowRight, Clock, CheckCircle2, Video, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardFooter } from "@/components/ui/card";
+import { Input, Textarea } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Tag } from "@/components/ui/tag";
+import { Avatar } from "@/components/ui/avatar";
+import { Toggle } from "@/components/ui/toggle";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { CodeBlock } from "@/components/ui/code-block";
+import { IconBadge, CodeIcon, BriefcaseIcon, ServerIcon } from "@/components/ui/icon-badge";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 
 // ─── TOC sections ────────────────────────────────
@@ -13,10 +23,11 @@ const SECTIONS = [
   { id: "radius", label: "Radius" },
   { id: "shadows", label: "Shadows" },
   { id: "buttons", label: "Buttons" },
-  { id: "badges", label: "Status & Badges" },
-  { id: "refcodes", label: "Ref Codes" },
+  { id: "badges", label: "Badges & Status" },
+  { id: "tags", label: "Tags & Icons" },
   { id: "cards", label: "Cards & KPIs" },
   { id: "forms", label: "Forms" },
+  { id: "controls", label: "Controls" },
   { id: "tables", label: "Tables" },
   { id: "empty", label: "Empty States" },
   { id: "principles", label: "Principles" },
@@ -47,7 +58,7 @@ function useActiveSection(ids: string[]) {
 // ─── Layout helpers ──────────────────────────────
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--fg-muted)] mb-3">
       {children}
     </p>
   );
@@ -73,9 +84,9 @@ function Section({
       style={{ "--stagger": stagger } as React.CSSProperties}
     >
       <div className="mb-5">
-        <h2 className="text-sm font-semibold text-foreground mb-1">{title}</h2>
+        <h2 className="text-sm font-semibold text-[var(--fg)] mb-1">{title}</h2>
         {description && (
-          <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+          <p className="text-xs text-[var(--fg-muted)] leading-relaxed">{description}</p>
         )}
       </div>
       {children}
@@ -83,26 +94,16 @@ function Section({
   );
 }
 
-function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-xl bg-card shadow-soft ring-1 ring-black/[0.06] overflow-hidden ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-function PanelFooter({ children }: { children: React.ReactNode }) {
-  return <div className="px-5 py-3 bg-muted border-t border-border">{children}</div>;
-}
-
 // ─── Swatch card ─────────────────────────────────
 function Swatch({ color, label, value }: { color: string; label: string; value: string }) {
   return (
-    <div className="rounded-lg ring-1 ring-black/[0.06] overflow-hidden">
+    <div className="rounded-[var(--radius-md)] border border-[var(--border)] overflow-hidden">
       <div className="h-10" style={{ background: color }} />
-      <div className="px-2.5 py-2 bg-card border-t border-border">
-        <p className="text-[12px] font-medium text-foreground leading-none mb-0.5">{label}</p>
-        <p className="text-[11px] font-mono text-muted-foreground">{value}</p>
+      <div className="px-2.5 py-2 bg-[var(--bg-subtle)] border-t border-[var(--border)]">
+        <p className="text-[12px] font-medium text-[var(--fg-secondary)] leading-none mb-0.5">
+          {label}
+        </p>
+        <p className="text-[11px] font-mono text-[var(--fg-muted)]">{value}</p>
       </div>
     </div>
   );
@@ -111,7 +112,8 @@ function Swatch({ color, label, value }: { color: string; label: string; value: 
 // ─── Page ─────────────────────────────────────────
 export default function DesignPage() {
   const [loading, setLoading] = useState(false);
-  const [showBorder, setShowBorder] = useState(false);
+  const [toggle1, setToggle1] = useState(true);
+  const [toggle2, setToggle2] = useState(false);
   const [concentricPad, setConcentricPad] = useState(12);
   const active = useActiveSection(SECTIONS.map((s) => s.id));
 
@@ -119,25 +121,30 @@ export default function DesignPage() {
   const outerRadius = innerRadius + concentricPad;
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-[var(--bg)]">
       {/* ── Sticky nav ───────────────────────── */}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur px-6 h-11 flex items-center justify-between">
+      <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--bg)] px-6 h-11 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Lock className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-medium text-foreground">ShipLock</span>
-          <span className="text-muted-foreground text-xs select-none">/</span>
-          <span className="text-xs font-medium text-foreground">Design System</span>
-          <span className="text-muted-foreground text-xs select-none">/</span>
-          <span className="text-xs font-mono text-muted-foreground">v0.1</span>
+          <Lock className="h-3.5 w-3.5 text-[var(--accent)]" />
+          <span className="text-xs font-medium text-[var(--fg)]">ShipLock</span>
+          <span className="text-[var(--fg-muted)] text-xs select-none">/</span>
+          <span className="text-xs font-medium text-[var(--fg)]">Design System</span>
+          <span className="text-[var(--fg-muted)] text-xs select-none">/</span>
+          <span className="text-xs font-mono text-[var(--fg-muted)]">v1.0</span>
         </div>
-        <StatusBadge tone="approved">Live</StatusBadge>
+        <div className="flex items-center gap-2">
+          <Badge variant="accent" size="sm" dot>
+            Live
+          </Badge>
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="max-w-[900px] mx-auto px-6 py-12 flex gap-12">
         {/* ── TOC sidebar ──────────────────── */}
         <aside className="hidden lg:block w-36 shrink-0">
           <nav className="sticky top-16 flex flex-col gap-0.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-2 px-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--fg-muted)] mb-2 px-2">
               Contents
             </p>
             {SECTIONS.map((s) => (
@@ -145,10 +152,10 @@ export default function DesignPage() {
                 key={s.id}
                 href={`#${s.id}`}
                 className={[
-                  "text-xs px-2 py-1 rounded-md transition-colors duration-100",
+                  "text-xs px-2 py-1 rounded-[var(--radius-sm)] transition-colors duration-100",
                   active === s.id
-                    ? "text-foreground font-medium bg-secondary"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "text-[var(--fg)] font-medium bg-[var(--bg-muted)]"
+                    : "text-[var(--fg-muted)] hover:text-[var(--fg-secondary)]",
                 ].join(" ")}
               >
                 {s.label}
@@ -161,83 +168,96 @@ export default function DesignPage() {
         <main className="flex-1 min-w-0 flex flex-col gap-14">
           {/* Intro */}
           <div className="animate-enter" style={{ "--stagger": 0 } as React.CSSProperties}>
-            <p className="text-[12px] font-mono text-muted-foreground uppercase tracking-widest mb-2">
+            <p className="text-[12px] font-mono text-[var(--fg-muted)] uppercase tracking-widest mb-2">
               ShipLock
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-2 text-balance">
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--fg)] mb-2">
               Design System
             </h1>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              The living reference for ShipLock&apos;s visual language — tokens, type, status
-              colors, and every component treatment. App screens should compose from what&apos;s
-              on this page and nothing else.
+            <p className="text-sm text-[var(--fg-secondary)] leading-relaxed">
+              ShipLock&apos;s visual language, ported from the portfolio-app design system —
+              tokens, type, components, and status semantics. App screens compose from this
+              page and nothing else.
             </p>
           </div>
+
+          <Separator />
 
           {/* ── Colors ────────────────────── */}
           <Section
             id="colors"
             title="Colors"
-            description="CSS variable tokens from globals.css. Components consume tokens — never hardcoded hex."
+            description="CSS variable tokens. All components consume these — never hardcoded values."
             stagger={1}
           >
             <div className="space-y-5">
               <div>
-                <SectionLabel>Surfaces & Lines</SectionLabel>
+                <SectionLabel>Backgrounds & Surfaces</SectionLabel>
                 <div className="grid grid-cols-4 gap-2.5">
-                  <Swatch color="var(--background)" label="Background" value="--background" />
-                  <Swatch color="var(--muted)" label="Muted" value="--muted" />
-                  <Swatch color="var(--secondary)" label="Secondary" value="--secondary" />
-                  <Swatch color="var(--border)" label="Border" value="--border" />
+                  <Swatch color="var(--bg)" label="Background" value="--bg" />
+                  <Swatch color="var(--bg-muted)" label="BG Muted" value="--bg-muted" />
+                  <Swatch color="var(--surface)" label="Surface" value="--surface" />
+                  <Swatch color="var(--card-footer)" label="Card Footer" value="--card-footer" />
                 </div>
               </div>
               <div>
                 <SectionLabel>Foreground</SectionLabel>
                 <div className="grid grid-cols-4 gap-2.5">
-                  <Swatch color="var(--foreground)" label="Foreground" value="--foreground" />
-                  <Swatch color="var(--muted-foreground)" label="Muted FG" value="--muted-foreground" />
-                  <Swatch color="var(--primary)" label="Primary" value="--primary" />
-                  <Swatch color="var(--destructive)" label="Destructive" value="--destructive" />
+                  <Swatch color="var(--fg)" label="Primary" value="--fg" />
+                  <Swatch color="var(--fg-secondary)" label="Secondary" value="--fg-secondary" />
+                  <Swatch color="var(--fg-muted)" label="Muted" value="--fg-muted" />
+                  <Swatch color="var(--fg-disabled)" label="Disabled" value="--fg-disabled" />
                 </div>
               </div>
               <div>
-                <SectionLabel>Status</SectionLabel>
+                <SectionLabel>Accent</SectionLabel>
+                <div className="grid grid-cols-4 gap-2.5">
+                  <Swatch color="var(--accent)" label="Blue" value="--accent" />
+                  <Swatch color="var(--accent-muted)" label="Blue Muted" value="--accent-muted" />
+                  <Swatch color="var(--teal)" label="Teal" value="--teal" />
+                  <Swatch color="var(--teal-muted)" label="Teal Muted" value="--teal-muted" />
+                </div>
+              </div>
+              <div>
+                <SectionLabel>Status — ShipLock semantics</SectionLabel>
                 <div className="grid grid-cols-5 gap-2.5">
-                  <Swatch color="var(--status-approved)" label="Approved" value="approved" />
-                  <Swatch color="var(--status-pending)" label="Pending" value="pending" />
-                  <Swatch color="var(--status-blocked)" label="Blocked" value="blocked" />
-                  <Swatch color="var(--status-auto)" label="Auto" value="auto" />
-                  <Swatch color="var(--status-disputed)" label="Disputed" value="disputed" />
+                  <Swatch color="var(--success)" label="Approved" value="--success" />
+                  <Swatch color="var(--warning)" label="Pending" value="--warning" />
+                  <Swatch color="var(--danger)" label="Blocked" value="--danger" />
+                  <Swatch color="var(--accent)" label="Auto" value="--accent" />
+                  <Swatch color="var(--disputed)" label="Disputed" value="--disputed" />
                 </div>
               </div>
             </div>
           </Section>
 
+          <Separator />
+
           {/* ── Typography ─────────────────── */}
           <Section
             id="typography"
             title="Typography"
-            description="Inter for UI. Mono for ref codes, metrics, and timestamps. Semibold max — no font-bold on data screens."
+            description="Geist Sans for UI text. Geist Mono for ref codes, metrics, timestamps. Font smoothing globally."
             stagger={2}
           >
-            <Panel>
+            <Card padding="none">
               {[
                 {
                   label: "h1",
                   el: (
-                    <span className="text-2xl font-semibold tracking-tight text-foreground">
+                    <span className="text-2xl font-semibold tracking-tight text-[var(--fg)]">
                       Scope locked. Silence impossible.
                     </span>
                   ),
                 },
                 {
                   label: "h2",
-                  el: <span className="text-lg font-semibold text-foreground">Requirements</span>,
+                  el: <span className="text-lg font-semibold text-[var(--fg)]">Requirements</span>,
                 },
                 {
                   label: "body",
                   el: (
-                    <span className="text-sm text-foreground leading-relaxed">
+                    <span className="text-sm text-[var(--fg-secondary)] leading-relaxed">
                       Client review sent — auto-approves in 48 hours unless disputed.
                     </span>
                   ),
@@ -245,7 +265,7 @@ export default function DesignPage() {
                 {
                   label: "caption",
                   el: (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-[var(--fg-muted)]">
                       Sent 2 hours ago · praise@digitalencode.com
                     </span>
                   ),
@@ -253,7 +273,7 @@ export default function DesignPage() {
                 {
                   label: "kpi",
                   el: (
-                    <span className="text-[28px] font-semibold tabular-nums tracking-tight text-foreground">
+                    <span className="text-[28px] font-semibold tabular-nums tracking-tight text-[var(--fg)]">
                       87%
                     </span>
                   ),
@@ -261,7 +281,7 @@ export default function DesignPage() {
                 {
                   label: "mono",
                   el: (
-                    <span className="text-sm font-mono text-primary tabular-nums">
+                    <span className="text-sm font-mono text-[var(--accent)] tabular-nums">
                       REQ-014 · T-041 · 48h 00m
                     </span>
                   ),
@@ -271,33 +291,35 @@ export default function DesignPage() {
                   key={row.label}
                   className={[
                     "flex items-center gap-5 px-5 py-3.5",
-                    i < arr.length - 1 ? "border-b border-border" : "",
+                    i < arr.length - 1 ? "border-b border-[var(--border)]" : "",
                   ].join(" ")}
                 >
-                  <span className="text-[12px] font-mono text-muted-foreground w-14 shrink-0">
+                  <span className="text-[12px] font-mono text-[var(--fg-muted)] w-14 shrink-0">
                     {row.label}
                   </span>
                   {row.el}
                 </div>
               ))}
-              <PanelFooter>
-                <p className="text-xs text-muted-foreground">
+              <CardFooter>
+                <p className="text-xs text-[var(--fg-muted)]">
                   <code className="font-mono">antialiased</code> globally ·{" "}
-                  <code className="font-mono">tabular-nums</code> on all dynamic numbers ·{" "}
-                  <code className="font-mono">text-balance</code> on headings
+                  <code className="font-mono">tabular-nums</code> on dynamic numbers ·{" "}
+                  <code className="font-mono">text-wrap: balance</code> on headings
                 </p>
-              </PanelFooter>
-            </Panel>
+              </CardFooter>
+            </Card>
           </Section>
+
+          <Separator />
 
           {/* ── Spacing ────────────────────── */}
           <Section
             id="spacing"
             title="Spacing"
-            description="4pt grid. Compact density — this is a data-heavy tool. One density system per page."
+            description="4pt base grid. Compact density — ShipLock is a data-heavy tool."
             stagger={3}
           >
-            <Panel>
+            <Card padding="none">
               <div className="px-5 py-4 space-y-2">
                 {[
                   { t: "1", px: 4 },
@@ -309,79 +331,88 @@ export default function DesignPage() {
                   { t: "12", px: 48 },
                 ].map((s) => (
                   <div key={s.t} className="flex items-center gap-4">
-                    <span className="text-[12px] font-mono text-muted-foreground w-5 text-right shrink-0">
+                    <span className="text-[12px] font-mono text-[var(--fg-muted)] w-5 text-right shrink-0">
                       {s.t}
                     </span>
                     <div
-                      className="h-3.5 rounded-sm shrink-0"
-                      style={{ width: s.px, backgroundColor: "rgba(43,127,255,0.18)" }}
+                      className="h-3.5 rounded-sm bg-[var(--accent-muted)] shrink-0"
+                      style={{ width: s.px }}
                     />
-                    <span className="text-[12px] text-muted-foreground">{s.px}px</span>
+                    <span className="text-[12px] text-[var(--fg-muted)]">{s.px}px</span>
                   </div>
                 ))}
               </div>
-              <PanelFooter>
-                <p className="text-xs text-muted-foreground">
-                  Compact pages: <code className="font-mono">gap-4 / p-4 / text-sm</code>. Never mix
-                  arbitrary values into the grid.
+              <CardFooter>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  Tailwind: 1 = 4px · 2 = 8px · 4 = 16px · 6 = 24px · 8 = 32px
                 </p>
-              </PanelFooter>
-            </Panel>
+              </CardFooter>
+            </Card>
           </Section>
+
+          <Separator />
 
           {/* ── Radius ─────────────────────── */}
           <Section
             id="radius"
             title="Border Radius"
-            description="Base radius 10px. Concentric rule: outer = inner + padding. Drag the slider."
+            description="Token scale 4–24px. Concentric rule: outer = inner + padding."
             stagger={4}
           >
             <div className="space-y-3">
-              <Panel>
-                <div className="grid grid-cols-5 gap-3 p-5">
+              <Card padding="none">
+                <div className="grid grid-cols-4 gap-3 p-5">
                   {[
-                    { l: "sm", v: "6px" },
-                    { l: "md", v: "8px" },
-                    { l: "lg", v: "10px" },
-                    { l: "xl", v: "12px" },
-                    { l: "full", v: "9999px" },
+                    { l: "xs", px: "4px", v: "var(--radius-xs)" },
+                    { l: "sm", px: "6px", v: "var(--radius-sm)" },
+                    { l: "md", px: "10px", v: "var(--radius-md)" },
+                    { l: "lg", px: "12px", v: "var(--radius-lg)" },
+                    { l: "xl", px: "16px", v: "var(--radius-xl)" },
+                    { l: "2xl", px: "24px", v: "var(--radius-2xl)" },
+                    { l: "full", px: "∞", v: "var(--radius-full)" },
                   ].map((r) => (
                     <div key={r.l} className="flex flex-col gap-2">
                       <div
-                        className="w-full h-12 bg-secondary ring-1 ring-black/[0.06]"
+                        className="w-full h-12 bg-[var(--bg-subtle)] border border-[var(--border)]"
                         style={{ borderRadius: r.v }}
                       />
                       <div>
-                        <p className="text-[12px] font-medium text-foreground">{r.l}</p>
-                        <p className="text-[11px] font-mono text-muted-foreground">{r.v}</p>
+                        <p className="text-[12px] font-medium text-[var(--fg-secondary)]">{r.l}</p>
+                        <p className="text-[11px] font-mono text-[var(--fg-muted)]">{r.px}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </Panel>
+                <CardFooter>
+                  <p className="text-xs text-[var(--fg-muted)]">
+                    Formula: <code className="font-mono">outer = inner + padding</code>
+                  </p>
+                </CardFooter>
+              </Card>
 
-              <Panel>
+              <Card padding="none">
                 <div className="p-5">
-                  <p className="text-xs font-medium text-foreground mb-4">Live: concentric radius</p>
+                  <p className="text-xs font-medium text-[var(--fg)] mb-4">
+                    Live: Concentric Radius
+                  </p>
                   <div className="flex items-center justify-center py-4">
                     <div
-                      className="ring-1 ring-black/[0.06] flex items-center justify-center transition-all duration-200"
+                      className="bg-[var(--accent-muted)] border border-[var(--border)] flex items-center justify-center transition-all duration-200"
                       style={{
                         borderRadius: outerRadius,
                         padding: concentricPad,
                         width: 120 + concentricPad * 2,
                         height: 80 + concentricPad * 2,
-                        backgroundColor: "rgba(43,127,255,0.08)",
                       }}
                     >
                       <div
-                        className="w-full h-full transition-all duration-200"
-                        style={{ borderRadius: innerRadius, backgroundColor: "var(--primary)" }}
+                        className="bg-[var(--accent)] w-full h-full transition-all duration-200"
+                        style={{ borderRadius: innerRadius }}
                       />
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="text-[12px] text-muted-foreground font-mono w-24 shrink-0 tabular-nums">
+                    <span className="text-[12px] text-[var(--fg-muted)] font-mono w-24 shrink-0 tabular-nums">
                       padding: {concentricPad}px
                     </span>
                     <input
@@ -390,293 +421,345 @@ export default function DesignPage() {
                       max={28}
                       value={concentricPad}
                       onChange={(e) => setConcentricPad(Number(e.target.value))}
-                      className="flex-1 accent-[#2b7fff]"
+                      className="flex-1 accent-[#2962db]"
                     />
-                    <span className="text-[12px] font-mono text-muted-foreground w-24 shrink-0 text-right tabular-nums">
+                    <span className="text-[12px] font-mono text-[var(--fg-muted)] w-24 shrink-0 text-right tabular-nums">
                       outer: {outerRadius}px
                     </span>
                   </div>
                 </div>
-                <PanelFooter>
-                  <p className="text-xs text-muted-foreground">
+                <CardFooter>
+                  <p className="text-xs text-[var(--fg-muted)]">
                     Inner fixed at {innerRadius}px. Outer = {innerRadius} + padding ={" "}
-                    <strong className="text-foreground tabular-nums">{outerRadius}px</strong>
+                    <strong className="text-[var(--fg)] tabular-nums">{outerRadius}px</strong>
                   </p>
-                </PanelFooter>
-              </Panel>
+                </CardFooter>
+              </Card>
             </div>
           </Section>
+
+          <Separator />
 
           {/* ── Shadows ────────────────────── */}
           <Section
             id="shadows"
             title="Shadows"
-            description="Soft layered shadows + a hairline ring instead of hard borders. Three elevations only."
+            description="Multi-layer transparent shadows adapt to light and dark. Toggle the theme to compare."
             stagger={5}
           >
-            <div className="space-y-3">
-              <Panel>
-                <div className="grid grid-cols-3 gap-5 p-5">
-                  {[
-                    { l: "soft", cls: "shadow-soft" },
-                    { l: "pop", cls: "shadow-pop" },
-                    { l: "btn", cls: "shadow-btn" },
-                  ].map((s) => (
-                    <div key={s.l} className="flex flex-col gap-2">
-                      <div className={`w-full h-14 rounded-[10px] bg-card ${s.cls}`} />
-                      <p className="text-[12px] font-mono text-muted-foreground">.shadow-{s.l}</p>
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-
-              <Panel>
-                <div className="p-5">
-                  <p className="text-xs font-medium text-foreground mb-4">Ring vs border</p>
-                  <div className="flex gap-6 items-center justify-center py-3">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-24 h-16 rounded-[10px] bg-card shadow-soft ring-1 ring-black/[0.06]" />
-                      <p className="text-[12px] text-muted-foreground">shadow + ring</p>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                      <div
-                        className={`w-24 h-16 rounded-[10px] bg-card border transition-colors duration-300 ${
-                          showBorder ? "border-gray-400" : "border-border"
-                        }`}
-                      />
-                      <p className="text-[12px] text-muted-foreground">border only</p>
-                    </div>
+            <Card padding="none">
+              <div className="grid grid-cols-3 gap-5 p-5">
+                {[
+                  { l: "sm", v: "var(--shadow-sm)" },
+                  { l: "md", v: "var(--shadow-md)" },
+                  { l: "lg", v: "var(--shadow-lg)" },
+                ].map((s) => (
+                  <div key={s.l} className="flex flex-col gap-2">
+                    <div
+                      className="w-full h-14 rounded-[var(--radius-md)] bg-[var(--surface)]"
+                      style={{ boxShadow: s.v }}
+                    />
+                    <p className="text-[12px] font-mono text-[var(--fg-muted)]">shadow-{s.l}</p>
                   </div>
-                </div>
-                <PanelFooter>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      Cards: <code className="font-mono">shadow-soft ring-1 ring-black/[0.06]</code>
-                    </p>
-                    <button
-                      onClick={() => setShowBorder((b) => !b)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      {showBorder ? "Weaken border" : "Strengthen border"}
-                    </button>
-                  </div>
-                </PanelFooter>
-              </Panel>
-            </div>
+                ))}
+              </div>
+              <CardFooter>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  Transparent layers adapt to dark/light. Solid{" "}
+                  <code className="font-mono">border</code> doesn&apos;t.
+                </p>
+              </CardFooter>
+            </Card>
           </Section>
+
+          <Separator />
 
           {/* ── Buttons ────────────────────── */}
           <Section
             id="buttons"
             title="Buttons"
-            description="shadcn button. Primary for the one main action per view; everything else is secondary or ghost."
+            description="Framer Motion tap feedback. AnimatePresence loading state. Primary/CTA share the skeuomorphic blue treatment."
             stagger={6}
           >
-            <Panel>
+            <Card padding="none">
               <div className="p-5 space-y-5">
                 <div>
                   <SectionLabel>Variants</SectionLabel>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button>Primary</Button>
                     <Button variant="secondary">Secondary</Button>
-                    <Button variant="outline">Outline</Button>
                     <Button variant="ghost">Ghost</Button>
-                    <Button variant="destructive">Destructive</Button>
+                    <Button variant="teal">Teal</Button>
+                    <Button variant="danger">Danger</Button>
                   </div>
                 </div>
                 <div>
                   <SectionLabel>Sizes</SectionLabel>
                   <div className="flex flex-wrap items-end gap-2">
-                    <Button size="xs">XSmall</Button>
                     <Button size="sm">Small</Button>
-                    <Button size="default">Default</Button>
+                    <Button size="md">Medium</Button>
+                    <Button size="lg">Large</Button>
                   </div>
                 </div>
                 <div>
-                  <SectionLabel>With icons</SectionLabel>
+                  <SectionLabel>With Icons</SectionLabel>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button>
-                      <Plus data-icon="inline-start" />
-                      New Requirement
+                    <Button iconLeft={<Plus className="h-3.5 w-3.5" />}>New Requirement</Button>
+                    <Button variant="secondary" iconRight={<ArrowRight className="h-3.5 w-3.5" />}>
+                      View All
                     </Button>
-                    <Button variant="secondary">
-                      View all
-                      <ArrowRight data-icon="inline-end" />
-                    </Button>
-                    <Button variant="ghost">
-                      <Search data-icon="inline-start" />
+                    <Button variant="ghost" iconLeft={<Search className="h-3.5 w-3.5" />}>
                       Search
                     </Button>
                   </div>
                 </div>
               </div>
-              <PanelFooter>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">Loading · disabled</p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      disabled={loading}
-                      onClick={() => {
-                        setLoading(true);
-                        setTimeout(() => setLoading(false), 1500);
-                      }}
-                    >
-                      {loading ? "Working…" : "Try loading"}
-                    </Button>
-                    <Button size="sm" variant="secondary" disabled>
-                      Disabled
-                    </Button>
-                  </div>
+              <CardFooter className="flex items-center justify-between">
+                <p className="text-xs text-[var(--fg-muted)]">Loading state · disabled</p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    loading={loading}
+                    loadingText="Sending…"
+                    onClick={() => {
+                      setLoading(true);
+                      setTimeout(() => setLoading(false), 2000);
+                    }}
+                  >
+                    Try loading
+                  </Button>
+                  <Button size="sm" variant="secondary" disabled>
+                    Disabled
+                  </Button>
                 </div>
-              </PanelFooter>
-            </Panel>
+              </CardFooter>
+            </Card>
           </Section>
 
-          {/* ── Status & Badges ───────────── */}
+          <Separator />
+
+          {/* ── Badges & Status ───────────── */}
           <Section
             id="badges"
-            title="Status & Badges"
-            description="One badge treatment: muted tint + colored dot. Tones map 1:1 to ShipLock statuses."
+            title="Badges & Status"
+            description="Base Badge variants + StatusBadge mapping ShipLock's review states 1:1."
             stagger={7}
           >
-            <Panel>
-              <div className="p-5 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <StatusBadge tone="approved">Approved</StatusBadge>
-                  <StatusBadge tone="pending">Pending review</StatusBadge>
-                  <StatusBadge tone="blocked">Blocked</StatusBadge>
-                  <StatusBadge tone="auto">Auto-approved</StatusBadge>
-                  <StatusBadge tone="disputed">Disputed</StatusBadge>
-                  <StatusBadge tone="neutral">Draft</StatusBadge>
+            <Card padding="none">
+              <div className="p-5 space-y-4">
+                <div>
+                  <SectionLabel>Badge variants</SectionLabel>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge>Default</Badge>
+                    <Badge variant="accent">Accent</Badge>
+                    <Badge variant="teal">Teal</Badge>
+                    <Badge variant="success">Success</Badge>
+                    <Badge variant="warning">Warning</Badge>
+                    <Badge variant="danger">Danger</Badge>
+                    <Badge variant="outline">Outline</Badge>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <StatusBadge tone="approved" dot={false}>
-                    No dot
-                  </StatusBadge>
-                  <StatusBadge tone="pending" dot={false}>
-                    48h left
-                  </StatusBadge>
+                <div>
+                  <SectionLabel>StatusBadge — review states</SectionLabel>
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge tone="approved">Approved</StatusBadge>
+                    <StatusBadge tone="pending">Pending review</StatusBadge>
+                    <StatusBadge tone="blocked">Blocked</StatusBadge>
+                    <StatusBadge tone="auto">Auto-approved</StatusBadge>
+                    <StatusBadge tone="disputed">Disputed</StatusBadge>
+                    <StatusBadge tone="neutral">Draft</StatusBadge>
+                  </div>
                 </div>
               </div>
-              <PanelFooter>
-                <p className="text-xs text-muted-foreground">
-                  <code className="font-mono">&lt;StatusBadge tone=&quot;pending&quot;&gt;</code> —
-                  from <code className="font-mono">components/ui/status-badge.tsx</code>
+              <CardFooter>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  <code className="font-mono">&lt;StatusBadge tone=&quot;pending&quot;&gt;</code> wraps{" "}
+                  <code className="font-mono">&lt;Badge variant dot size=&quot;sm&quot;&gt;</code>
                 </p>
-              </PanelFooter>
-            </Panel>
+              </CardFooter>
+            </Card>
           </Section>
 
-          {/* ── Ref codes ─────────────────── */}
+          <Separator />
+
+          {/* ── Tags & Icons ───────────────── */}
           <Section
-            id="refcodes"
-            title="Ref Codes"
-            description="Every requirement and task has a permanent mono reference. Always the .ref-code chip, always clickable in context."
+            id="tags"
+            title="Tags & Icons"
+            description="Monospace pills for labels and weeks. Rounded-square icon badges for categories."
             stagger={8}
           >
-            <Panel>
-              <div className="p-5 flex flex-wrap items-center gap-2">
-                <span className="ref-code">REQ-001</span>
-                <span className="ref-code">REQ-014</span>
-                <span className="ref-code">T-041</span>
-                <span className="ref-code">T-102</span>
-                <span className="ref-code">SC-007</span>
+            <Card padding="none">
+              <div className="p-5 space-y-4">
+                <div>
+                  <SectionLabel>Tags</SectionLabel>
+                  <div className="flex flex-wrap gap-2">
+                    {["W1", "W2", "MVP", "Post-MVP", "PCI DSS", "client_request", "meeting", "internal"].map(
+                      (t) => (
+                        <Tag key={t}>{t}</Tag>
+                      )
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <SectionLabel>Icon badges + ref codes</SectionLabel>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <IconBadge size="sm">
+                      <CodeIcon size={12} />
+                    </IconBadge>
+                    <IconBadge>
+                      <BriefcaseIcon />
+                    </IconBadge>
+                    <IconBadge size="lg">
+                      <ServerIcon size={18} />
+                    </IconBadge>
+                    <span className="w-3" />
+                    <span className="ref-code">REQ-001</span>
+                    <span className="ref-code">T-041</span>
+                    <span className="ref-code">SC-007</span>
+                  </div>
+                </div>
               </div>
-              <PanelFooter>
-                <p className="text-xs text-muted-foreground">
-                  <code className="font-mono">.ref-code</code> utility — mono, blue tint, rounded.
+              <CardFooter>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  <code className="font-mono">.ref-code</code> — mono chip on{" "}
+                  <code className="font-mono">--accent-muted</code>
                 </p>
-              </PanelFooter>
-            </Panel>
+              </CardFooter>
+            </Card>
           </Section>
+
+          <Separator />
 
           {/* ── Cards & KPIs ──────────────── */}
           <Section
             id="cards"
             title="Cards & KPIs"
-            description="White card, soft shadow, hairline ring. KPI values are 28px semibold tabular."
+            description="White surface, hairline border, gray footer band. hoverable adds border+shadow lift."
             stagger={9}
           >
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Requirements approved", value: "24/31", icon: CheckCircle2, tone: "approved" as StatusTone },
-                { label: "Pending client review", value: "4", icon: Clock, tone: "pending" as StatusTone },
-                { label: "Demos delivered", value: "12", icon: Video, tone: "auto" as StatusTone },
-              ].map((kpi) => (
-                <div key={kpi.label} className="rounded-xl bg-card shadow-soft ring-1 ring-black/[0.06] p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      {kpi.label}
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Requirements approved", value: "24/31", icon: CheckCircle2 },
+                  { label: "Pending client review", value: "4", icon: Clock },
+                  { label: "Demos delivered", value: "12", icon: Video },
+                ].map((kpi) => (
+                  <Card key={kpi.label} padding="sm" hoverable>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">
+                        {kpi.label}
+                      </p>
+                      <kpi.icon className="h-3.5 w-3.5 text-[var(--fg-muted)] shrink-0" />
+                    </div>
+                    <p className="text-[28px] font-semibold tabular-nums tracking-tight text-[var(--fg)] leading-none">
+                      {kpi.value}
                     </p>
-                    <kpi.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Card>
+                ))}
+              </div>
+
+              <Card padding="none" hoverable>
+                <div className="p-5 flex items-center gap-3">
+                  <Avatar initials="PO" size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--fg)]">
+                      Praise approved <span className="ref-code">REQ-012</span>
+                    </p>
+                    <p className="text-xs text-[var(--fg-muted)] mt-0.5">2 hours ago · via review link</p>
                   </div>
-                  <p className="text-[28px] font-semibold tabular-nums tracking-tight text-foreground leading-none">
-                    {kpi.value}
-                  </p>
+                  <StatusBadge tone="approved">Approved</StatusBadge>
                 </div>
-              ))}
+                <CardFooter>
+                  <p className="text-xs text-[var(--fg-muted)]">
+                    Card + CardFooter — white body, gray band, one hairline.
+                  </p>
+                </CardFooter>
+              </Card>
             </div>
           </Section>
+
+          <Separator />
 
           {/* ── Forms ─────────────────────── */}
           <Section
             id="forms"
             title="Forms"
-            description="Uppercase micro-labels, hairline inputs, blue focus ring. Submit buttons always disable while pending."
+            description="Input / Textarea with built-in label, hint, and error. Blue focus ring."
             stagger={10}
           >
-            <Panel>
+            <Card padding="none">
               <div className="p-5 grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Requirement title
-                  </label>
-                  <input
-                    placeholder="e.g. Role-based access control"
-                    className="w-full px-3 py-2 rounded-lg border border-input bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Classification
-                  </label>
-                  <select className="w-full px-3 py-2 rounded-lg border border-input bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors">
-                    <option>MVP</option>
-                    <option>Post-MVP</option>
-                    <option>Out of scope</option>
-                  </select>
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Description
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="What exactly did the client ask for?"
-                    className="w-full px-3 py-2 rounded-lg border border-input bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors resize-none"
-                  />
+                <Input
+                  label="Requirement title"
+                  placeholder="e.g. Role-based access control"
+                  hint="Shown to the client exactly as written."
+                />
+                <Input
+                  label="Client email"
+                  placeholder="praise@client.com"
+                  error="This email isn't on the project."
+                  iconLeft={<Search className="h-3.5 w-3.5" />}
+                />
+                <div className="col-span-2">
+                  <Textarea label="Description" placeholder="What exactly did the client ask for?" />
                 </div>
               </div>
-              <PanelFooter>
-                <p className="text-xs text-muted-foreground">
-                  Labels: <code className="font-mono">text-xs uppercase tracking-wide</code> · focus:{" "}
-                  <code className="font-mono">ring-2 ring-ring/40</code>
+              <CardFooter>
+                <p className="text-xs text-[var(--fg-muted)]">
+                  Submit buttons always disable while pending (SubmitButton / Button loading).
                 </p>
-              </PanelFooter>
-            </Panel>
+              </CardFooter>
+            </Card>
           </Section>
+
+          <Separator />
+
+          {/* ── Controls ──────────────────── */}
+          <Section
+            id="controls"
+            title="Controls"
+            description="Toggle (spring thumb), Avatar sizes, CodeBlock with copy feedback."
+            stagger={11}
+          >
+            <Card padding="none">
+              <div className="p-5 space-y-5">
+                <div>
+                  <SectionLabel>Toggles</SectionLabel>
+                  <div className="flex items-center gap-6">
+                    <Toggle checked={toggle1} onChange={setToggle1} label="Auto-approve after 48h" />
+                    <Toggle checked={toggle2} onChange={setToggle2} label="Weekly status email" />
+                  </div>
+                </div>
+                <div>
+                  <SectionLabel>Avatars</SectionLabel>
+                  <div className="flex items-end gap-2">
+                    <Avatar initials="K" size="xs" />
+                    <Avatar initials="KP" size="sm" />
+                    <Avatar initials="PO" size="md" />
+                    <Avatar initials="DE" size="lg" />
+                  </div>
+                </div>
+                <div>
+                  <SectionLabel>Code block</SectionLabel>
+                  <CodeBlock language="bash" code="npx drizzle-kit push && npx tsx src/db/seed.ts" />
+                </div>
+              </div>
+            </Card>
+          </Section>
+
+          <Separator />
 
           {/* ── Tables ────────────────────── */}
           <Section
             id="tables"
             title="Tables"
-            description="Hairline row dividers, mono ref codes, right-aligned status. Rows are links — whole row is the hit area."
-            stagger={11}
+            description="Hairline dividers, mono ref codes, right-aligned status. Whole row is the hit area."
+            stagger={12}
           >
-            <Panel>
-              <div className="px-5 py-2.5 border-b border-border bg-muted flex items-center text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                <span className="w-20">Ref</span>
+            <Card padding="none">
+              <div className="px-5 py-2.5 border-b border-[var(--border)] bg-[var(--bg-subtle)] flex items-center text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--fg-muted)]">
+                <span className="w-24">Ref</span>
                 <span className="flex-1">Title</span>
                 <span className="w-32 text-right">Status</span>
               </div>
@@ -689,87 +772,90 @@ export default function DesignPage() {
                 <div
                   key={row.ref}
                   className={[
-                    "px-5 py-3 flex items-center hover:bg-muted/60 transition-colors cursor-pointer",
-                    i < arr.length - 1 ? "border-b border-border" : "",
+                    "px-5 py-3 flex items-center hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer",
+                    i < arr.length - 1 ? "border-b border-[var(--border)]" : "",
                   ].join(" ")}
                 >
-                  <span className="w-20 shrink-0">
+                  <span className="w-24 shrink-0">
                     <span className="ref-code">{row.ref}</span>
                   </span>
-                  <span className="flex-1 text-sm text-foreground truncate pr-4">{row.title}</span>
+                  <span className="flex-1 text-sm text-[var(--fg)] truncate pr-4">{row.title}</span>
                   <span className="w-32 shrink-0 flex justify-end">
                     <StatusBadge tone={row.tone}>{row.status}</StatusBadge>
                   </span>
                 </div>
               ))}
-            </Panel>
+            </Card>
           </Section>
+
+          <Separator />
 
           {/* ── Empty states ──────────────── */}
           <Section
             id="empty"
             title="Empty States"
-            description="Never a bare 'no data'. Icon tile + one-line reason + the action that fixes it."
-            stagger={12}
+            description="Never a bare 'no data'. IconBadge + one-line reason + the action that fixes it."
+            stagger={13}
           >
-            <Panel>
-              <div className="flex flex-col items-center justify-center py-14 text-center">
-                <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center mb-4">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <p className="text-sm font-medium text-foreground">No requirements yet</p>
-                <p className="text-sm text-muted-foreground mt-1 mb-4">
+            <Card>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <IconBadge size="lg" className="mb-4">
+                  <FileText className="h-[18px] w-[18px]" />
+                </IconBadge>
+                <p className="text-sm font-medium text-[var(--fg)]">No requirements yet</p>
+                <p className="text-sm text-[var(--fg-muted)] mt-1 mb-4">
                   Lock scope by capturing what the client asked for.
                 </p>
-                <Button size="sm">
-                  <Plus data-icon="inline-start" />
+                <Button size="sm" iconLeft={<Plus className="h-3.5 w-3.5" />}>
                   Add requirement
                 </Button>
               </div>
-            </Panel>
+            </Card>
           </Section>
+
+          <Separator />
 
           {/* ── Principles ────────────────── */}
           <Section
             id="principles"
             title="Principles"
-            description="Rules every screen follows. From Jakub Krehel's 'details that make interfaces feel better' + shadcn conventions."
-            stagger={13}
+            description="Rules every screen follows — from Jakub Krehel's 'details that make interfaces feel better'."
+            stagger={14}
           >
-            <Panel>
+            <Card padding="none">
               {[
                 ["Concentric radius", "Nested rounding: outer = inner + padding. Never equal."],
                 ["Tabular numbers", "tabular-nums on every count, timer, and KPI — no layout shift."],
-                ["Shadows over borders", "Cards use shadow-soft + hairline ring, not 1px solid walls."],
-                ["One accent", "Blue #2b7fff is the only accent. Status colors are semantic, not decorative."],
+                ["Layered shadows", "Multi-layer transparent shadows adapt to both themes; hard borders don't."],
+                ["One accent", "Blue --accent is the only decorative color. Status colors are semantic."],
                 ["Stagger enters", "Sections animate in with 60ms stagger; exits stay subtle."],
-                ["Specific transitions", "transition-colors / transition-transform — never transition-all."],
-                ["40px hit areas", "Small controls extend their tap target; whole table rows are links."],
+                ["Interruptible motion", "Springs with bounce 0; whileTap scale 0.97; AnimatePresence initial={false}."],
+                ["Specific transitions", "transition-colors / transition-transform — never transition-all on hot paths."],
                 ["Designed non-happy paths", "Empty, loading, and error states get real treatment."],
               ].map(([title, body], i, arr) => (
                 <div
                   key={title}
                   className={[
                     "px-5 py-3.5 flex gap-4 items-baseline",
-                    i < arr.length - 1 ? "border-b border-border" : "",
+                    i < arr.length - 1 ? "border-b border-[var(--border)]" : "",
                   ].join(" ")}
                 >
-                  <span className="text-[12px] font-mono text-muted-foreground w-5 shrink-0 tabular-nums">
+                  <span className="text-[12px] font-mono text-[var(--fg-muted)] w-5 shrink-0 tabular-nums">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{body}</p>
+                    <p className="text-sm font-medium text-[var(--fg)]">{title}</p>
+                    <p className="text-xs text-[var(--fg-muted)] mt-0.5 leading-relaxed">{body}</p>
                   </div>
                 </div>
               ))}
-            </Panel>
+            </Card>
           </Section>
 
           <footer className="pb-8">
-            <p className="text-xs text-muted-foreground">
-              Skeleton adapted from portfolio-app&apos;s design-system page · principles via{" "}
-              <a href="https://jakub.kr" className="text-primary hover:underline">
+            <p className="text-xs text-[var(--fg-muted)]">
+              Ported from portfolio-app&apos;s design system · principles via{" "}
+              <a href="https://jakub.kr" className="text-[var(--accent)] hover:underline">
                 jakub.kr
               </a>
             </p>

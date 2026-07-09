@@ -47,12 +47,17 @@ ShipLock is a client delivery protection system for dev studios. It answers: "Di
 - **Client** (client role): Reviews via signed URLs — no account required for review pages
 
 ## Design system
-- Dark-first UI. Background `#09090b`, cards `#18181b`, borders `#27272a`
-- Primary: indigo `#6366f1` — professional, trustworthy
-- Status colors: green = approved/done, yellow = pending/warning, red = blocked/overdue, blue = auto-approved
-- Typography: Inter for UI, mono for ref codes (REQ-001, T-041)
-- Radius: `0.75rem` consistent
-- Density: compact — this is a data-heavy tool
+Ported from the portfolio-app repo (`/Users/kene/projects/portfolio-app`). The living reference is **`/design`** (public route) — every app screen composes from its tokens and components, nothing else.
+
+- **Light-first** with full dark support (`.dark` class via next-themes; `ThemeToggle` in `ui/theme-toggle.tsx`). Page `--bg #f6f6f7`, white `--surface` cards, hairline `--border rgba(0,0,0,0.07)`.
+- **Accent**: blue `--accent #2962db` (dark: `#3b7dff`) — the ONLY decorative color. Secondary accent: `--teal`.
+- **Status semantics** (StatusBadge tones): approved→`--success`, pending→`--warning`, blocked→`--danger`, auto→`--accent`, disputed→`--disputed` (orange).
+- **Components** in `src/components/ui/` (all consume raw tokens via `var(--…)`): `Button` (primary/cta = skeuomorphic blue, framer-motion tap + loading), `Badge`/`StatusBadge`, `Card`+`CardFooter` (gray footer band), `Input`/`Textarea` (built-in label/hint/error), `Tag` (mono pill), `IconBadge`, `Avatar`, `Toggle`, `Separator`, `CodeBlock`, `ThemeToggle`, `SubmitButton` (useFormStatus).
+- **Typography**: Geist Sans / Geist Mono (local fonts via `--font-sans`/`--font-mono`). Mono for ref codes (`.ref-code` chip), metrics, timestamps. `tabular-nums` on all dynamic numbers.
+- **Radius scale**: `--radius-xs 4px` … `--radius-2xl 24px`; concentric rule: outer = inner + padding.
+- **Shadows**: layered transparent `--shadow-sm/md/lg` — adapt to both themes.
+- **Legacy aliases**: shadcn names (`--background`, `--card`, `--primary`, `bg-muted`, …) resolve to the new tokens; prefer raw tokens in new code.
+- Density: compact — this is a data-heavy tool. Entrances: `.animate-enter` with `--stagger`.
 
 ## DB
 - Schema in `src/db/schema.ts`

@@ -5,101 +5,195 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────
-   ShipLock design tokens — clean light theme.
-   Pure white surfaces (incl. sidebar), near-black text, hairline
-   borders, light-gray active pills, black pill buttons, rounded
-   corners (~10px), soft diffuse shadows. Light-only.
+   ShipLock design tokens — ported from portfolio-app.
+   Off-white page, white elevated cards with gray footer bands,
+   blue accent (#2962db), semantic status colors, layered
+   shadows, 4–24px radius scale. Light + dark (.dark class).
    ───────────────────────────────────────────────────────────── */
 @layer base {
   :root {
+    /* Backgrounds */
+    --bg: #f6f6f7;
+    --bg-subtle: rgba(0, 0, 0, 0.02);
+    --bg-muted: #e7e7ea;
+
     /* Surfaces */
-    --background: #ffffff;
-    --foreground: #1a1a1a;          /* near-black headings/text */
-    --card: #ffffff;
-    --card-foreground: #1a1a1a;
-    --popover: #ffffff;
-    --popover-foreground: #1a1a1a;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --surface-overlay: #ffffff;
+    --card-footer: #fafafa;
+    --component-fill: rgba(0, 0, 0, 0.025);
 
-    /* Lines */
-    --border: #ebebeb;             /* very light hairline */
-    --input: #e3e3e3;
+    /* CTA / primary button — skeuomorphic blue */
+    --cta-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(0, 0, 0, 0.08) 100%), #2962db;
+    --cta-border: rgba(0, 0, 0, 0.22);
+    --cta-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.14);
 
-    /* Primary = ShipLock brand blue (CTAs) */
-    --primary: #2b7fff;
-    --primary-foreground: #ffffff;
-    --primary-hover: #1f6fef;
+    /* Borders */
+    --border: rgba(0, 0, 0, 0.07);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --border-footer: rgba(0, 0, 0, 0.06);
 
-    /* Neutral fills */
-    --secondary: #f4f4f5;          /* active pill / tab fill */
-    --secondary-foreground: #1a1a1a;
-    --muted: #f7f7f8;
-    --muted-foreground: #888888;    /* gray secondary text */
-    --accent: #f4f4f5;             /* hover fill */
-    --accent-foreground: #1a1a1a;
+    /* Foreground */
+    --fg: #09090b;
+    --fg-secondary: #52525b;
+    --fg-muted: #a1a1aa;
+    --fg-disabled: #d4d4d8;
 
-    /* Destructive */
-    --destructive: #e5484d;
+    /* Accent — Blue */
+    --accent: #2962db;
+    --accent-hover: #1f4fb8;
+    --accent-muted: rgba(41, 98, 219, 0.08);
+    --accent-fg: #ffffff;
+
+    /* Teal (secondary accent) */
+    --teal: #0d9488;
+    --teal-muted: rgba(13, 148, 136, 0.08);
+
+    /* Semantic */
+    --success: #16a34a;
+    --success-muted: rgba(22, 163, 74, 0.08);
+    --warning: #d97706;
+    --warning-muted: rgba(217, 119, 6, 0.08);
+    --danger: #dc2626;
+    --danger-muted: rgba(220, 38, 38, 0.08);
+
+    /* ShipLock extension — disputed (orange, distinct from warning) */
+    --disputed: #ea580c;
+    --disputed-muted: rgba(234, 88, 12, 0.08);
+
+    /* Shadows — layered, transparent */
+    --shadow-sm:
+      0px 0px 0px 1px rgba(0, 0, 0, 0.05),
+      0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+    --shadow-md:
+      0px 0px 0px 1px rgba(0, 0, 0, 0.06),
+      0px 2px 4px -1px rgba(0, 0, 0, 0.07),
+      0px 4px 12px 0px rgba(0, 0, 0, 0.05);
+    --shadow-lg:
+      0px 0px 0px 1px rgba(0, 0, 0, 0.06),
+      0px 4px 8px -2px rgba(0, 0, 0, 0.09),
+      0px 12px 32px 0px rgba(0, 0, 0, 0.07);
+
+    /* Radius scale */
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+
+    /* ── shadcn/app compatibility aliases ─────────────────────
+       Existing screens consume these; they resolve to the
+       portfolio tokens above. New code should prefer the raw
+       tokens (--fg, --surface, --accent, …). */
+    --background: var(--bg);
+    --foreground: var(--fg);
+    --card: var(--surface);
+    --card-foreground: var(--fg);
+    --popover: var(--surface-overlay);
+    --popover-foreground: var(--fg);
+    --input: var(--border-strong);
+    --primary: var(--accent);
+    --primary-foreground: var(--accent-fg);
+    --primary-hover: var(--accent-hover);
+    --secondary: var(--bg-muted);
+    --secondary-foreground: var(--fg);
+    --muted: var(--component-fill);
+    --muted-foreground: var(--fg-secondary);
+    --destructive: var(--danger);
     --destructive-foreground: #ffffff;
+    --ring: var(--accent);
+    --radius: 0.625rem;
 
-    /* Focus ring / link accent = blue */
-    --ring: #2b7fff;
-    --radius: 0.625rem;            /* 10px — rounded MiniMax feel */
+    /* Sidebar — page-toned rail, white active pill */
+    --sidebar: var(--bg);
+    --sidebar-foreground: var(--fg);
+    --sidebar-border: var(--border);
+    --sidebar-accent: var(--surface);
+    --sidebar-accent-foreground: var(--fg);
+    --sidebar-primary: var(--fg);
+    --sidebar-primary-foreground: var(--surface);
+    --sidebar-ring: var(--accent);
 
-    /* Sidebar — soft grey rail; active item is a white pill that pops */
-    --sidebar: #f7f7f8;
-    --sidebar-foreground: #1a1a1a;
-    --sidebar-border: #ececec;
-    --sidebar-accent: #ffffff;     /* active pill (white on grey) */
-    --sidebar-accent-foreground: #1a1a1a;
-    --sidebar-primary: #1a1a1a;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-ring: #2b7fff;
-
-    /* Status colors */
-    --status-approved: #1a9c5b;    /* green */
-    --status-pending: #c2870a;     /* amber */
-    --status-blocked: #e5484d;     /* red */
-    --status-auto: #2b7fff;        /* blue */
-    --status-disputed: #e07c24;    /* orange */
+    /* Status colors — semantic mapping */
+    --status-approved: var(--success);
+    --status-pending: var(--warning);
+    --status-blocked: var(--danger);
+    --status-auto: var(--accent);
+    --status-disputed: var(--disputed);
 
     /* Charts — neutral grays */
     --chart-1: #c4c4c4;
     --chart-2: #9b9b9b;
     --chart-3: #767676;
     --chart-4: #4d4d4d;
-    --chart-5: #1a1a1a;
+    --chart-5: #09090b;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #ffffff;
-      --foreground: #1a1a1a;
-      --card: #ffffff;
-      --card-foreground: #1a1a1a;
-      --popover: #ffffff;
-      --popover-foreground: #1a1a1a;
-      --border: #ebebeb;
-      --input: #e3e3e3;
-      --primary: #2b7fff;
-      --primary-foreground: #ffffff;
-      --secondary: #f4f4f5;
-      --secondary-foreground: #1a1a1a;
-      --muted: #f7f7f8;
-      --muted-foreground: #888888;
-      --accent: #f4f4f5;
-      --accent-foreground: #1a1a1a;
-      --destructive: #e5484d;
-      --destructive-foreground: #ffffff;
-      --ring: #2b7fff;
-      --sidebar: #f7f7f8;
-      --sidebar-foreground: #1a1a1a;
-      --sidebar-border: #ececec;
-      --sidebar-accent: #ffffff;
-      --sidebar-accent-foreground: #1a1a1a;
-      --sidebar-primary: #1a1a1a;
-      --sidebar-primary-foreground: #ffffff;
-      --sidebar-ring: #2b7fff;
-    }
+  .dark {
+    /* Backgrounds */
+    --bg: #0a0a0c;
+    --bg-subtle: #111115;
+    --bg-muted: #212126;
+
+    /* Surfaces */
+    --surface: #18181c;
+    --surface-raised: #1e1e22;
+    --surface-overlay: #28282d;
+    --card-footer: #1c1c20;
+    --component-fill: rgba(255, 255, 255, 0.06);
+
+    /* CTA */
+    --cta-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(0, 0, 0, 0.12) 100%), #2962db;
+    --cta-border: rgba(0, 0, 0, 0.4);
+    --cta-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+
+    /* Borders */
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --border-footer: rgba(255, 255, 255, 0.07);
+
+    /* Foreground */
+    --fg: #fafafa;
+    --fg-secondary: #a1a1aa;
+    --fg-muted: #71717a;
+    --fg-disabled: #3f3f46;
+
+    /* Accent */
+    --accent: #3b7dff;
+    --accent-hover: #2962db;
+    --accent-muted: rgba(41, 98, 219, 0.15);
+    --accent-fg: #ffffff;
+
+    /* Teal */
+    --teal: #14b8a6;
+    --teal-muted: rgba(20, 184, 166, 0.15);
+
+    /* Semantic */
+    --success: #22c55e;
+    --success-muted: rgba(34, 197, 94, 0.15);
+    --warning: #f59e0b;
+    --warning-muted: rgba(245, 158, 11, 0.15);
+    --danger: #ef4444;
+    --danger-muted: rgba(239, 68, 68, 0.15);
+    --disputed: #f97316;
+    --disputed-muted: rgba(249, 115, 22, 0.15);
+
+    /* Shadows */
+    --shadow-sm:
+      0px 0px 0px 1px rgba(255, 255, 255, 0.05),
+      0px 1px 2px -1px rgba(0, 0, 0, 0.3),
+      0px 2px 4px 0px rgba(0, 0, 0, 0.2);
+    --shadow-md:
+      0px 0px 0px 1px rgba(255, 255, 255, 0.05),
+      0px 2px 4px -1px rgba(0, 0, 0, 0.4),
+      0px 4px 12px 0px rgba(0, 0, 0, 0.3);
+    --shadow-lg:
+      0px 0px 0px 1px rgba(255, 255, 255, 0.05),
+      0px 4px 8px -2px rgba(0, 0, 0, 0.5),
+      0px 12px 32px 0px rgba(0, 0, 0, 0.4);
   }
 
   * {
@@ -108,11 +202,23 @@
 
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
   }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -124,6 +230,7 @@
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.24); background-clip: content-box; }
+  .dark ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); background-clip: content-box; }
 }
 
 @keyframes enter {
@@ -149,23 +256,15 @@
     .animate-enter { animation: none; }
   }
 
-  /* Monospace ref codes like REQ-001, T-041 — brand-blue chip */
+  /* Monospace ref codes like REQ-001, T-041 — accent chip */
   .ref-code {
     @apply font-mono text-xs px-1.5 py-0.5 rounded-md tracking-wide;
-    background-color: rgba(43, 127, 255, 0.1);
-    color: #1f6fef;
+    background-color: var(--accent-muted);
+    color: var(--accent);
   }
 
-  /* Soft diffuse elevation (cards / inputs) */
-  .shadow-soft {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.05);
-  }
-  /* Stronger elevation (popovers / floating cards) */
-  .shadow-pop {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 12px 32px rgba(0, 0, 0, 0.1);
-  }
-  /* Subtle single-layer lift (reserved for floating menus only) */
-  .shadow-btn {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  }
+  /* Elevation aliases — existing pages use these names */
+  .shadow-soft { box-shadow: var(--shadow-md); }
+  .shadow-pop { box-shadow: var(--shadow-lg); }
+  .shadow-btn { box-shadow: var(--shadow-sm); }
 }

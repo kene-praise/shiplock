@@ -1,58 +1,148 @@
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { cva, type VariantProps } from "class-variance-authority"
+"use client";
 
-import { cn } from "@/lib/utils"
+import { motion, AnimatePresence } from "framer-motion";
+import { forwardRef, ButtonHTMLAttributes } from "react";
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-)
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "teal" | "cta";
+type ButtonSize = "sm" | "md" | "lg";
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  )
+interface ButtonProps
+  extends Omit<
+    ButtonHTMLAttributes<HTMLButtonElement>,
+    "onAnimationStart" | "onDrag" | "onDragEnd" | "onDragStart"
+  > {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  loadingText?: string;
+  iconLeft?: React.ReactNode;
+  iconRight?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-export { Button, buttonVariants }
+const variantClasses: Record<ButtonVariant, string> = {
+  // primary shares the skeuomorphic treatment with cta
+  primary: "text-white",
+  secondary:
+    "bg-[var(--surface-raised)] text-[var(--fg)] border border-[var(--border-strong)] hover:bg-[var(--bg-muted)] shadow-[var(--shadow-sm)]",
+  ghost:
+    "bg-transparent text-[var(--fg-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--fg)]",
+  danger:
+    "bg-[var(--danger-muted)] text-[var(--danger)] border border-[var(--danger)] border-opacity-20 hover:bg-[var(--danger)] hover:text-white",
+  teal:
+    "bg-[var(--teal-muted)] text-[var(--teal)] border border-[var(--teal)] border-opacity-20 hover:bg-[var(--teal)] hover:text-white",
+  cta: "text-white",
+};
+
+const sizeClasses: Record<ButtonSize, string> = {
+  sm: "h-7 px-3 text-xs gap-1.5 rounded-[var(--radius-sm)]",
+  md: "h-9 px-4 text-sm gap-2 rounded-[var(--radius-md)]",
+  lg: "h-11 px-5 text-base gap-2.5 rounded-[var(--radius-lg)]",
+};
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      variant = "primary",
+      size = "md",
+      loading = false,
+      loadingText = "Working…",
+      iconLeft,
+      iconRight,
+      children,
+      className = "",
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    const isDisabled = disabled || loading;
+
+    const ctaStyle: React.CSSProperties =
+      variant === "cta" || variant === "primary"
+        ? {
+            background: "var(--cta-bg)",
+            border: "1px solid var(--cta-border)",
+            boxShadow: "var(--cta-shadow)",
+            transition: "box-shadow 0.12s ease",
+          }
+        : {};
+
+    return (
+      <motion.button
+        ref={ref}
+        whileHover={variant === "cta" || variant === "primary" ? { scale: 1.015 } : undefined}
+        whileTap={{ scale: 0.97 }}
+        transition={{ duration: 0.1, type: "spring", stiffness: 600, damping: 30 }}
+        disabled={isDisabled}
+        className={[
+          "inline-flex items-center justify-center font-medium leading-none",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]",
+          "disabled:opacity-40 disabled:cursor-not-allowed",
+          "select-none cursor-pointer",
+          variantClasses[variant],
+          "transition-all duration-150 ease-out",
+          sizeClasses[size],
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={ctaStyle}
+        {...props}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {loading ? (
+            <motion.span
+              key="spinner"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-2"
+            >
+              <Spinner />
+              {children && <span>{loadingText}</span>}
+            </motion.span>
+          ) : (
+            <motion.span
+              key="content"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.12 }}
+              className="flex items-center"
+              style={{ gap: "inherit" }}
+            >
+              {iconLeft && <span className="shrink-0">{iconLeft}</span>}
+              {children}
+              {iconRight && <span className="shrink-0 opacity-60">{iconRight}</span>}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
+    );
+  }
+);
+
+Button.displayName = "Button";
+
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin"
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.25" />
+      <path
+        d="M7 1.5A5.5 5.5 0 0 1 12.5 7"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
