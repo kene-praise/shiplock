@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createStandup } from "@/lib/actions/standups";
+import { SubmitButton } from "@/components/submit-button";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -20,7 +21,7 @@ export default async function TodayStandupPage({ params }: Props) {
     day: "numeric",
   });
 
-  const action = createStandup.bind(null, projectData.id, "user_kene", org, project);
+  const action = createStandup.bind(null, projectData.id, org, project);
 
   return (
     <div className="p-6 max-w-xl space-y-6">
@@ -78,12 +79,12 @@ export default async function TodayStandupPage({ params }: Props) {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            className="flex-1 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium transition-colors"
+          <SubmitButton
+            pendingText="Submitting…"
+            className="flex-1 py-2 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium transition-colors"
           >
             Submit Standup
-          </button>
+          </SubmitButton>
           <Link
             href={`/${org}/${project}/standups`}
             className="px-4 py-2 rounded-lg bg-muted hover:bg-muted/70 text-muted-foreground text-sm font-medium transition-colors"

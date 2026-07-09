@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/db";
 import { organizations, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -27,10 +28,17 @@ export default async function OrgSettingsPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-background">
       <header className="h-14 border-b border-border flex items-center px-6 gap-2">
-        <Shield className="h-4 w-4 text-primary" />
-        <span className="font-semibold text-sm">ShipLock</span>
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Shield className="h-4 w-4 text-primary" />
+          <span className="font-semibold text-sm">ShipLock</span>
+        </Link>
         <span className="text-muted-foreground text-sm">/</span>
-        <span className="text-sm text-muted-foreground">{orgData.name}</span>
+        <Link
+          href={`/${org}/projects`}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {orgData.name}
+        </Link>
         <span className="text-muted-foreground text-sm">/</span>
         <span className="text-sm text-muted-foreground">Settings</span>
       </header>

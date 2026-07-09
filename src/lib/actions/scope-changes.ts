@@ -5,6 +5,7 @@ import { scopeChanges } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireBuilder, requireProjectInOrg } from "./guard";
 
 export async function createScopeChange(
   projectId: string,
@@ -12,6 +13,9 @@ export async function createScopeChange(
   project: string,
   formData: FormData
 ) {
+  const member = await requireBuilder(org);
+  await requireProjectInOrg(projectId, member.orgId);
+
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const source = (formData.get("source") as string) ?? "client_request";
@@ -43,6 +47,16 @@ export async function updateScopeChangeStatus(
   org: string,
   project: string
 ) {
+  const member = await requireBuilder(org);
+
+  const [change] = await db
+    .select({ projectId: scopeChanges.projectId })
+    .from(scopeChanges)
+    .where(eq(scopeChanges.id, id))
+    .limit(1);
+  if (!change) return;
+  await requireProjectInOrg(change.projectId, member.orgId);
+
   await db
     .update(scopeChanges)
     .set({

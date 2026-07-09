@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,20 +20,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/sign-in/email", {
+      const res = await fetch("/api/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.message ?? "Invalid email or password");
+        setError(data.message ?? "Could not create your account");
         return;
       }
 
-      const from = new URLSearchParams(window.location.search).get("from");
-      router.push(from ?? "/");
+      router.push("/onboarding");
     } catch {
       setError("Connection error — please try again.");
     } finally {
@@ -49,11 +49,25 @@ export default function LoginPage() {
           </div>
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground tracking-tight">ShipLock</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Sign in to your account</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Create your account</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Name
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+            />
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Email
@@ -63,7 +77,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@shiplock.dev"
+              placeholder="you@yourstudio.dev"
               className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
             />
           </div>
@@ -76,6 +90,7 @@ export default function LoginPage() {
               <input
                 type={showPassword ? "text" : "password"}
                 required
+                minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -103,13 +118,13 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium transition-colors"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "Creating account…" : "Create account"}
           </button>
 
           <p className="text-sm text-muted-foreground text-center">
-            New to ShipLock?{" "}
-            <Link href="/signup" className="text-primary hover:underline">
-              Create an account
+            Already have an account?{" "}
+            <Link href="/login" className="text-primary hover:underline">
+              Sign in
             </Link>
           </p>
         </form>

@@ -7,8 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendRequirementReviewEmail } from "@/lib/email";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { requireBuilder, requireProjectInOrg } from "./guard";
 
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
@@ -28,6 +27,9 @@ export async function createRequirement(
   project: string,
   formData: FormData
 ) {
+  const member = await requireBuilder(org);
+  await requireProjectInOrg(projectId, member.orgId);
+
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const source = (formData.get("source") as string) || "meeting";
@@ -58,6 +60,8 @@ export async function sendRequirementForReview(
   org: string,
   project: string
 ) {
+  const member = await requireBuilder(org);
+
   const [req] = await db
     .select()
     .from(requirements)
@@ -68,9 +72,9 @@ export async function sendRequirementForReview(
   const [projectData] = await db
     .select({ id: projects.id, name: projects.name, orgId: projects.orgId })
     .from(projects)
-    .where(eq(projects.slug, project))
+    .where(and(eq(projects.slug, project), eq(projects.orgId, member.orgId)))
     .limit(1);
-  if (!projectData) return;
+  if (!projectData || req.projectId !== projectData.id) return;
 
   const clientUsers = await db
     .select()
@@ -134,16 +138,16 @@ export async function deleteRequirement(
   org: string,
   project: string
 ) {
-  const session = await auth.api.getSession({ headers: headers() });
-  const userId = session?.user?.id;
+  const member = await requireBuilder(org);
 
   const [req] = await db
     .select()
     .from(requirements)
     .where(eq(requirements.id, requirementId))
     .limit(1);
-    
+
   if (!req) return;
+  await requireProjectInOrg(req.projectId, member.orgId);
 
   // Clear references to prevent foreign key errors
   await db.update(tasks).set({ requirementId: null }).where(eq(tasks.requirementId, requirementId));
@@ -153,7 +157,7 @@ export async function deleteRequirement(
   // Insert audit log
   await db.insert(auditLogs).values({
     projectId: req.projectId,
-    userId: userId || null,
+    userId: member.user.id,
     action: "deleted",
     entityType: "requirement",
     entityId: req.id as string,

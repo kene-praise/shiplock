@@ -44,18 +44,28 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
       {/* Top bar */}
       <header className="h-14 border-b border-border flex items-center justify-between px-6">
         <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">ShipLock</span>
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Lock className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-sm">ShipLock</span>
+          </Link>
           <span className="text-muted-foreground text-sm">/</span>
           <span className="text-sm text-muted-foreground">{orgData?.name ?? org}</span>
         </div>
-        <Link
-          href={`/${org}/projects/new`}
-          className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New Project
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/${org}/settings`}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Settings
+          </Link>
+          <Link
+            href={`/${org}/projects/new`}
+            className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Project
+          </Link>
+        </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-10">

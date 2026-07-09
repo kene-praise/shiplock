@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createProject } from "@/lib/actions/projects";
+import { SubmitButton } from "@/components/submit-button";
 import { db } from "@/db";
 import { organizations } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -47,9 +48,12 @@ export default async function NewProjectPage({ params }: Props) {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium transition-colors">
+            <SubmitButton
+              pendingText="Creating…"
+              className="flex-1 py-2.5 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium transition-colors"
+            >
               Create Project
-            </button>
+            </SubmitButton>
             <Link href={`/${org}/projects`} className="px-4 py-2 rounded-lg bg-muted hover:bg-muted/70 text-muted-foreground text-sm font-medium transition-colors">
               Cancel
             </Link>

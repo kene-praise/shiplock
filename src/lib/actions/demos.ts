@@ -7,8 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendDemoReviewEmail } from "@/lib/email";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { requireBuilder, requireProjectInOrg } from "./guard";
 
 export async function createDemo(
   projectId: string,
@@ -16,6 +15,9 @@ export async function createDemo(
   project: string,
   formData: FormData
 ) {
+  const member = await requireBuilder(org);
+  await requireProjectInOrg(projectId, member.orgId);
+
   const title = (formData.get("title") as string)?.trim();
   const videoUrl = (formData.get("videoUrl") as string)?.trim();
   const recordedAt = (formData.get("recordedAt") as string) || new Date().toISOString();
@@ -41,15 +43,17 @@ export async function createDemo(
 }
 
 export async function sendDemoToClient(demoId: string, org: string, project: string) {
+  const member = await requireBuilder(org);
+
   const [demo] = await db.select().from(demoVideos).where(eq(demoVideos.id, demoId)).limit(1);
   if (!demo || demo.sentToClient) return;
 
   const [projectData] = await db
     .select({ id: projects.id, name: projects.name, orgId: projects.orgId })
     .from(projects)
-    .where(eq(projects.slug, project))
+    .where(and(eq(projects.slug, project), eq(projects.orgId, member.orgId)))
     .limit(1);
-  if (!projectData) return;
+  if (!projectData || demo.projectId !== projectData.id) return;
 
   const clientUsers = await db
     .select()
@@ -116,16 +120,16 @@ export async function deleteDemoVideo(
   org: string,
   project: string
 ) {
-  const session = await auth.api.getSession({ headers: headers() });
-  const userId = session?.user?.id;
+  const member = await requireBuilder(org);
 
   const [demo] = await db
     .select()
     .from(demoVideos)
     .where(eq(demoVideos.id, demoId))
     .limit(1);
-    
+
   if (!demo) return;
+  await requireProjectInOrg(demo.projectId, member.orgId);
 
   // Clear references to prevent foreign key errors
   await db.update(dodItems).set({ demoVideoId: null }).where(eq(dodItems.demoVideoId, demoId));
@@ -134,7 +138,7 @@ export async function deleteDemoVideo(
   // Insert audit log
   await db.insert(auditLogs).values({
     projectId: demo.projectId,
-    userId: userId || null,
+    userId: member.user.id,
     action: "deleted",
     entityType: "demo_video",
     entityId: demo.id as string,

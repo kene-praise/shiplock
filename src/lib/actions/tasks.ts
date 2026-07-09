@@ -5,6 +5,7 @@ import { tasks } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { requireBuilder, requireProjectInOrg } from "./guard";
 
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
@@ -24,6 +25,9 @@ export async function createTask(
   project: string,
   formData: FormData
 ) {
+  const member = await requireBuilder(org);
+  await requireProjectInOrg(projectId, member.orgId);
+
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim() || null;
   const priority = (formData.get("priority") as string) || "p2_medium";
@@ -39,7 +43,7 @@ export async function createTask(
     refCode,
     title,
     description,
-    ownerId: "user_kene",
+    ownerId: member.user.id,
     priority: priority as "p0_critical" | "p1_high" | "p2_medium" | "p3_low",
     status: "not_started",
     week,
