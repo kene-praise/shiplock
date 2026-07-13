@@ -131,3 +131,27 @@
 **Why:** Plain server-action forms allowed double-clicks to fire the action twice — user got two identical projects seconds apart.
 **What was considered but not done:** Name-based dedupe guards on the other create actions — refCodes are sequential so duplicates there are visible/deletable, and the disabled button covers the realistic case.
 **Tags:** [ux, forms, idempotency, bugfix]
+
+### /design living design-system page — 2026-07-09
+**What changed:** New public `/design` route — ShipLock's visual-language reference (tokens, type, spacing, radius, shadows, buttons, StatusBadge, ref codes, KPI cards, forms, tables, empty states, principles). Skeleton copied from portfolio-app's design-system page; principles from Jakub Krehel's make-interfaces-feel-better skill (already installed locally). Added reusable `ui/status-badge.tsx` and `.animate-enter` stagger utility.
+**Why:** UI refinement needs a single source of truth to iterate against before touching app screens; current screens feel inconsistent ("tacky").
+**What was considered but not done:** Fetching jakub.kr live (site unreachable from this network — used the installed skill instead); framer-motion (kept CSS-only since it isn't a dependency).
+**Tags:** [design-system, ui, tooling]
+
+### Portfolio-app design system adopted wholesale — 2026-07-10
+**What changed:** Ported portfolio-app's full token set (light+dark) and 11 UI components into shiplock; /design rewritten around them; CLAUDE.md design section rewritten. framer-motion added. Theme default flipped dark→light (old next-themes provider still defaulted dark). shadcn token names kept as aliases so existing screens restyled automatically.
+**Why:** Kene: "copy over the full design style and components of my portfolio-app repo — that's what we'd be building shiplock with." One design language across both projects.
+**What was considered but not done:** Portfolio's 17px html font-size (kept 16px for data density); portfolio-specific components (PhoneFrame, ProjectPreview, BrandLogos, AnimatedSignature, CursorAvatar) not ported; app screens still use legacy alias classes — migrating them to raw tokens/components is the next refinement pass.
+**Tags:** [design-system, ui, tokens, components]
+
+### Full app restyled onto the ported portfolio design system — 2026-07-10
+**What changed:** Every app screen (dashboard, requirements, tasks, scope-changes, demos, DoD, blockers, standups, audit log, settings, auth, onboarding, projects list, client review) now composes from the portfolio tokens; dashboard-ui.tsx primitives and charts were tokenized (CSS vars in SVG) so they adapt to dark mode; sidebar got the page-toned rail with white active pill; added `.btn-cta` / `.btn-secondary` / `.btn-danger` / `.field-label` / `.field-input` global classes for server-rendered buttons and forms.
+**Why:** The app screens still carried the old /preview hardcoded grays and dark-first shadcn chips; ShipLock should read as an extension of the portfolio — same surfaces, hairline borders, skeuomorphic blue CTA, mono ref-code chips, staggered entrances — tuned denser for a SaaS tool.
+**What was considered but not done:** Wrapping every page in the framer-motion Button/Card components — kept server components and used token classes instead to avoid client-boundary churn.
+**Tags:** [design-system, tokens, restyle, dark-mode]
+
+### Linear-style shell + HugeIcons migration — 2026-07-10
+**What changed:** Sidebar rebuilt Linear-style (220px rail, workspace switcher with gradient lock mark, "Deliver"/"Protect" nav sections, 28px rows, flat active fill); new breadcrumb top bar (`AppTopBar`) in the project layout with theme toggle; page padding tightened (px-5 py-4, gap-4) and `PageHeader` collapsed to a single row; projects page redesigned as a dense full-width row list (h-11 rows, status dot + badge + deadline) instead of a centered card column; org settings matched to the same shell. All icons migrated from lucide-react to HugeIcons via a lucide-name-compatible wrapper (`src/components/icons.tsx`) — only the `/preview` portfolio embed still uses lucide.
+**Why:** The app read as a generic centered layout with oversized headers and dead space; Linear/Raycast density (compact rails, breadcrumb bars, row lists) fits a data-heavy delivery tool and the wrapper made the icon swap a one-line import change per file.
+**What was considered but not done:** Migrating /preview icons too — left untouched per the "no portfolio changes until verified" rule. Command palette (⌘K) — natural next step for the Linear feel but out of scope.
+**Tags:** [layout, sidebar, hugeicons, density, linear-style]

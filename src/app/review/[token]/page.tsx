@@ -18,7 +18,7 @@ import {
   CircleMinus,
   AlertTriangle,
   Users,
-} from "lucide-react";
+} from "@/components/icons";
 import { formatDate } from "@/lib/utils";
 
 interface Props {
@@ -35,11 +35,11 @@ const taskStatusIcon: Record<string, React.ElementType> = {
 };
 
 const taskStatusColor: Record<string, string> = {
-  not_started: "text-zinc-500",
-  in_progress: "text-blue-400",
-  blocked: "text-red-400",
-  done: "text-green-400",
-  cut: "text-zinc-600",
+  not_started: "text-[var(--fg-muted)]",
+  in_progress: "text-[var(--accent)]",
+  blocked: "text-[var(--danger)]",
+  done: "text-[var(--success)]",
+  cut: "text-[var(--fg-muted)]",
 };
 
 export default async function ReviewPage({ params, searchParams }: Props) {
@@ -52,11 +52,11 @@ export default async function ReviewPage({ params, searchParams }: Props) {
     return (
       <Shell>
         <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-            <ShieldAlert className="h-6 w-6 text-red-400" />
+          <div className="w-12 h-12 rounded-full bg-[var(--danger-muted)] flex items-center justify-center">
+            <ShieldAlert className="h-6 w-6 text-[var(--danger)]" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">Invalid or expired link</h1>
+            <h1 className="text-lg font-semibold tracking-tight text-[var(--fg)]">Invalid or expired link</h1>
             <p className="text-sm text-muted-foreground mt-1">
               This review link has expired or is no longer valid. Contact the team for a new one.
             </p>
@@ -73,17 +73,17 @@ export default async function ReviewPage({ params, searchParams }: Props) {
         <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              approved ? "bg-green-500/10" : "bg-orange-500/10"
+              approved ? "bg-[var(--success-muted)]" : "bg-[var(--disputed-muted)]"
             }`}
           >
             {approved ? (
-              <CheckCircle2 className="h-6 w-6 text-green-400" />
+              <CheckCircle2 className="h-6 w-6 text-[var(--success)]" />
             ) : (
-              <MessageSquare className="h-6 w-6 text-orange-400" />
+              <MessageSquare className="h-6 w-6 text-[var(--disputed)]" />
             )}
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">
+            <h1 className="text-lg font-semibold tracking-tight text-[var(--fg)]">
               {approved ? "Approved — thank you!" : "Feedback submitted"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -101,17 +101,17 @@ export default async function ReviewPage({ params, searchParams }: Props) {
     return (
       <Shell>
         <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
-            <AlertTriangle className="h-6 w-6 text-yellow-400" />
+          <div className="w-12 h-12 rounded-full bg-[var(--warning-muted)] flex items-center justify-center">
+            <AlertTriangle className="h-6 w-6 text-[var(--warning)]" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">Name required</h1>
+            <h1 className="text-lg font-semibold tracking-tight text-[var(--fg)]">Name required</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Please enter your name before submitting your response.
             </p>
             <a
               href={`/review/${token}`}
-              className="mt-4 inline-block text-sm text-primary hover:underline"
+              className="mt-4 inline-block text-sm text-[var(--accent)] hover:underline"
             >
               Go back →
             </a>
@@ -170,14 +170,14 @@ export default async function ReviewPage({ params, searchParams }: Props) {
         <div className="space-y-6">
           {/* Reviewing as */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-            <Lock className="h-3 w-3 shrink-0 text-primary" />
+            <Lock className="h-3 w-3 shrink-0 text-[var(--accent)]" />
             Reviewing as <span className="text-foreground font-medium">{payload.reviewerEmail}</span>
           </div>
 
           {/* Requirement header */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-mono text-primary">{req.refCode}</span>
+              <span className="font-mono text-[var(--accent)]">{req.refCode}</span>
               <span>·</span>
               <span className="capitalize">{req.source}</span>
               {req.sourceDetail && (
@@ -187,7 +187,7 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                 </>
               )}
             </div>
-            <h2 className="text-xl font-bold text-foreground">{req.title}</h2>
+            <h2 className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">{req.title}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">{req.description}</p>
           </div>
 
@@ -213,8 +213,8 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         r.decision === "approved"
-                          ? "text-green-400 bg-green-500/10"
-                          : "text-orange-400 bg-orange-500/10"
+                          ? "text-[var(--success)] bg-[var(--success-muted)]"
+                          : "text-[var(--disputed)] bg-[var(--disputed-muted)]"
                       }`}
                     >
                       {r.decision}
@@ -230,14 +230,14 @@ export default async function ReviewPage({ params, searchParams }: Props) {
             <div
               className={`flex items-center gap-3 p-4 rounded-xl border ${
                 myPriorReview?.decision === "approved"
-                  ? "border-green-900/40 bg-green-950/20"
-                  : "border-orange-900/40 bg-orange-950/20"
+                  ? "border-[var(--success)]/30 bg-[var(--success-muted)]"
+                  : "border-[var(--disputed)]/30 bg-[var(--disputed-muted)]"
               }`}
             >
               {myPriorReview?.decision === "approved" ? (
-                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
               ) : (
-                <MessageSquare className="h-5 w-5 text-orange-400" />
+                <MessageSquare className="h-5 w-5 text-[var(--disputed)]" />
               )}
               <p className="text-sm font-medium text-foreground capitalize">
                 You already {myPriorReview?.decision} this requirement
@@ -247,8 +247,8 @@ export default async function ReviewPage({ params, searchParams }: Props) {
             <div className="space-y-4">
               {/* Name field shared by both forms — we'll pass via hidden inputs */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Your name <span className="text-red-400">*</span>
+                <label className="field-label">
+                  Your name <span className="text-[var(--danger)]">*</span>
                 </label>
                 <p className="text-xs text-muted-foreground">
                   Required to record who is signing off.
@@ -260,11 +260,11 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                   name="reviewerName"
                   required
                   placeholder="e.g. Amara Osei"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                  className="field-input"
                 />
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl bg-[var(--success)] hover:brightness-110 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Approve this requirement
@@ -282,18 +282,18 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                   name="reviewerName"
                   required
                   placeholder="e.g. Amara Osei"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                  className="field-input"
                 />
                 <textarea
                   name="comment"
                   rows={3}
                   required
                   placeholder="Describe your concern or what needs to change..."
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition resize-none"
+                  className="field-input resize-none"
                 />
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl border border-orange-800 bg-orange-950/30 hover:bg-orange-950/50 text-orange-400 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl border border-[var(--disputed)]/40 bg-[var(--disputed-muted)] hover:bg-[var(--disputed)] hover:text-white text-[var(--disputed)] font-medium text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageSquare className="h-4 w-4" />
                   Submit concern
@@ -372,13 +372,13 @@ export default async function ReviewPage({ params, searchParams }: Props) {
         <div className="space-y-6">
           {/* Reviewing as */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-            <Lock className="h-3 w-3 shrink-0 text-primary" />
+            <Lock className="h-3 w-3 shrink-0 text-[var(--accent)]" />
             Reviewing as <span className="text-foreground font-medium">{payload.reviewerEmail}</span>
           </div>
 
           {/* Demo header */}
           <div className="space-y-1">
-            <h2 className="text-xl font-bold text-foreground">{demo.title}</h2>
+            <h2 className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">{demo.title}</h2>
             <p className="text-xs text-muted-foreground">
               Recorded {formatDate(demo.recordedAt)}
               {demo.durationSeconds &&
@@ -394,8 +394,8 @@ export default async function ReviewPage({ params, searchParams }: Props) {
             className="block rounded-xl border border-border bg-card aspect-video relative overflow-hidden group hover:border-primary/40 transition-colors"
           >
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                <Play className="h-7 w-7 text-primary ml-1" />
+              <div className="w-16 h-16 rounded-full bg-[var(--accent-muted)] group-hover:bg-[var(--accent)]/25 flex items-center justify-center transition-colors">
+                <Play className="h-7 w-7 text-[var(--accent)] ml-1" />
               </div>
               <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 Click to watch demo
@@ -412,7 +412,7 @@ export default async function ReviewPage({ params, searchParams }: Props) {
               </h3>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-primary">{linkedReq.refCode}</span>
+                  <span className="font-mono text-xs text-[var(--accent)]">{linkedReq.refCode}</span>
                 </div>
                 <p className="text-sm font-medium text-foreground">{linkedReq.title}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -429,7 +429,7 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                   </p>
                   {linkedTasks.map((task) => {
                     const Icon = taskStatusIcon[task.status] ?? CircleMinus;
-                    const color = taskStatusColor[task.status] ?? "text-zinc-500";
+                    const color = taskStatusColor[task.status] ?? "text-[var(--fg-muted)]";
                     return (
                       <div
                         key={task.id}
@@ -471,8 +471,8 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                       <span
                         className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                           r.decision === "approved"
-                            ? "text-green-400 bg-green-500/10"
-                            : "text-red-400 bg-red-500/10"
+                            ? "text-[var(--success)] bg-[var(--success-muted)]"
+                            : "text-[var(--danger)] bg-[var(--danger-muted)]"
                         }`}
                       >
                         {r.decision}
@@ -494,14 +494,14 @@ export default async function ReviewPage({ params, searchParams }: Props) {
             <div
               className={`flex items-center gap-3 p-4 rounded-xl border ${
                 myPriorReview?.decision === "approved"
-                  ? "border-green-900/40 bg-green-950/20"
-                  : "border-red-900/40 bg-red-950/20"
+                  ? "border-[var(--success)]/30 bg-[var(--success-muted)]"
+                  : "border-[var(--danger)]/30 bg-[var(--danger-muted)]"
               }`}
             >
               {myPriorReview?.decision === "approved" ? (
-                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
               ) : (
-                <XCircle className="h-5 w-5 text-red-400" />
+                <XCircle className="h-5 w-5 text-[var(--danger)]" />
               )}
               <div>
                 <p className="text-sm font-medium text-foreground capitalize">
@@ -517,8 +517,8 @@ export default async function ReviewPage({ params, searchParams }: Props) {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Your name <span className="text-red-400">*</span>
+                <label className="field-label">
+                  Your name <span className="text-[var(--danger)]">*</span>
                 </label>
                 <p className="text-xs text-muted-foreground">
                   Required to record who is signing off.
@@ -530,11 +530,11 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                   name="reviewerName"
                   required
                   placeholder="e.g. Amara Osei"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                  className="field-input"
                 />
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl bg-[var(--success)] hover:brightness-110 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Approve this demo
@@ -552,18 +552,18 @@ export default async function ReviewPage({ params, searchParams }: Props) {
                   name="reviewerName"
                   required
                   placeholder="e.g. Amara Osei"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                  className="field-input"
                 />
                 <textarea
                   name="comment"
                   rows={3}
                   required
                   placeholder="What needs to change? Be specific — your feedback will be reviewed for scope."
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition resize-none"
+                  className="field-input resize-none"
                 />
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl border border-red-800 bg-red-950/30 hover:bg-red-950/50 text-red-400 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-muted)] hover:bg-[var(--danger-muted)] text-[var(--danger)] font-medium text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <XCircle className="h-4 w-4" />
                   Request changes
@@ -584,8 +584,8 @@ function Shell({ children, project }: { children: React.ReactNode; project?: str
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-            <Lock className="h-3 w-3 text-primary" />
+          <div className="w-6 h-6 rounded-md bg-[var(--accent-muted)] flex items-center justify-center">
+            <Lock className="h-3 w-3 text-[var(--accent)]" />
           </div>
           <span className="font-semibold text-sm text-foreground">ShipLock</span>
         </div>

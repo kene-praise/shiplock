@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff } from "@/components/icons";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -44,18 +44,18 @@ export default function SignupPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Lock className="h-5 w-5 text-primary" />
+          <div className="w-10 h-10 rounded-[var(--radius-md)] bg-[var(--component-fill)] border border-[var(--border)] outline outline-1 outline-[var(--border)] outline-offset-2 flex items-center justify-center">
+            <Lock className="h-5 w-5 text-[var(--accent)]" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-foreground tracking-tight">ShipLock</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Create your account</p>
+            <h1 className="text-lg font-semibold tracking-tight text-[var(--fg)]">ShipLock</h1>
+            <p className="text-[13px] text-[var(--fg-muted)] mt-0.5">Create your account</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <label className="field-label">
               Name
             </label>
             <input
@@ -64,12 +64,12 @@ export default function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              className="field-input"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <label className="field-label">
               Email
             </label>
             <input
@@ -78,12 +78,12 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@yourstudio.dev"
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              className="field-input"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <label className="field-label">
               Password
             </label>
             <div className="relative">
@@ -94,7 +94,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3 py-2 pr-10 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+                className="field-input !pr-10"
               />
               <button
                 type="button"
@@ -108,7 +108,7 @@ export default function SignupPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-950/20 border border-red-900/40 rounded-lg px-3 py-2">
+            <p className="text-sm text-[var(--danger)] bg-[var(--danger-muted)] border border-[var(--danger)]/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -116,14 +116,14 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium transition-colors"
+            className="btn-cta w-full"
           >
             {loading ? "Creating account…" : "Create account"}
           </button>
 
           <p className="text-sm text-muted-foreground text-center">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="text-[var(--accent)] hover:underline">
               Sign in
             </Link>
           </p>

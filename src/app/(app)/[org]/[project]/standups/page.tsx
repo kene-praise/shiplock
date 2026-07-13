@@ -2,9 +2,10 @@ import { db } from "@/db";
 import { standups, projects } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { BookOpen, Plus, AlertTriangle } from "lucide-react";
+import { BookOpen, Plus, AlertTriangle } from "@/components/icons";
 import { formatDate } from "@/lib/utils";
+import { PageHeader, CtaLink, SectionLabel } from "@/components/dashboard-ui";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
@@ -23,53 +24,47 @@ export default async function StandupsPage({ params }: Props) {
     .orderBy(desc(standups.date));
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Standups</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{history.length} entries</p>
-        </div>
-        <Link
-          href={`/${org}/${project}/standups/today`}
-          className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Today&apos;s Standup
-        </Link>
-      </div>
+    <div className="min-h-full w-full max-w-[1100px] mx-auto px-8 py-6 flex flex-col gap-4">
+      <PageHeader title="Standups" meta={`${history.length} entries`}>
+        <CtaLink href={`/${org}/${project}/standups/today`}>
+          <Plus className="h-3.5 w-3.5" /> Today&apos;s Standup
+        </CtaLink>
+      </PageHeader>
 
       {history.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <BookOpen className="h-8 w-8 text-muted-foreground mb-3" />
-          <p className="text-sm font-medium text-foreground">No standups yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Log your first standup to start tracking progress.</p>
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] flex flex-col items-center justify-center py-24 text-center animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
+          <BookOpen className="h-8 w-8 text-[var(--fg-disabled)] mb-3" />
+          <p className="text-[13px] font-medium text-[var(--fg)]">No standups yet</p>
+          <p className="text-[11px] text-[var(--fg-muted)] mt-1">Log your first standup to start tracking progress.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3 animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
           {history.map((s) => (
-            <div key={s.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">{formatDate(s.date)}</p>
+            <div key={s.id} className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+              <div
+                className="flex items-center justify-between px-4 py-2.5"
+                style={{ background: "var(--card-footer)", borderBottom: "1px solid var(--border-footer)" }}
+              >
+                <p className="text-[12px] font-mono font-medium text-[var(--fg-secondary)] tabular-nums">{formatDate(s.date)}</p>
                 {s.blockers && (
-                  <span className="flex items-center gap-1 text-xs text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">
-                    <AlertTriangle className="h-3 w-3" />
-                    Has blockers
-                  </span>
+                  <StatusBadge tone="blocked" dot={false}>
+                    <AlertTriangle className="h-3 w-3" /> Has blockers
+                  </StatusBadge>
                 )}
               </div>
-              <div className="space-y-2">
+              <div className="p-4 flex flex-col gap-3">
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mb-0.5">Yesterday</p>
-                  <p className="text-sm text-foreground">{s.didYesterday}</p>
+                  <SectionLabel>Yesterday</SectionLabel>
+                  <p className="text-[13px] text-[var(--fg)] mt-1">{s.didYesterday}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mb-0.5">Today</p>
-                  <p className="text-sm text-foreground">{s.doingToday}</p>
+                  <SectionLabel>Today</SectionLabel>
+                  <p className="text-[13px] text-[var(--fg)] mt-1">{s.doingToday}</p>
                 </div>
                 {s.blockers && (
                   <div>
-                    <p className="text-[10px] text-yellow-500 uppercase tracking-widest font-medium mb-0.5">Blockers</p>
-                    <p className="text-sm text-yellow-400">{s.blockers}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--danger)]">Blockers</p>
+                    <p className="text-[13px] text-[var(--fg-secondary)] mt-1">{s.blockers}</p>
                   </div>
                 )}
               </div>

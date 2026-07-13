@@ -3,8 +3,9 @@ import { tasks, projects } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import { CheckCircle2 } from "@/components/icons";
 import { formatRelativeTime } from "@/lib/utils";
+import { PageHeader } from "@/components/dashboard-ui";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
@@ -23,51 +24,49 @@ export default async function BlockersPage({ params }: Props) {
     .orderBy(tasks.updatedAt);
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <AlertTriangle className={`h-5 w-5 ${blocked.length > 0 ? "text-red-400" : "text-muted-foreground"}`} />
-          Blockers
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {blocked.length === 0 ? "Nothing blocked right now." : `${blocked.length} active blocker${blocked.length > 1 ? "s" : ""}`}
-        </p>
-      </div>
+    <div className="min-h-full w-full max-w-[1100px] mx-auto px-8 py-6 flex flex-col gap-4">
+      <PageHeader
+        title="Blockers"
+        meta={blocked.length === 0 ? "Nothing blocked right now." : `${blocked.length} active blocker${blocked.length > 1 ? "s" : ""}`}
+      />
 
       {blocked.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
-            <AlertTriangle className="h-5 w-5 text-green-400" />
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] flex flex-col items-center justify-center py-24 text-center animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
+          <div
+            className="w-11 h-11 rounded-[var(--radius-lg)] flex items-center justify-center mb-4 border border-[var(--border)]"
+            style={{ background: "var(--success-muted)", outline: "1px solid var(--border)", outlineOffset: "2px" }}
+          >
+            <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
           </div>
-          <p className="text-sm font-medium text-foreground">All clear</p>
-          <p className="text-xs text-muted-foreground mt-1">No tasks are blocked. Keep shipping.</p>
+          <p className="text-[13px] font-medium text-[var(--fg)]">All clear</p>
+          <p className="text-[11px] text-[var(--fg-muted)] mt-1">No tasks are blocked. Keep shipping.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-2 animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
           {blocked.map((task) => (
             <Link
               key={task.id}
               href={`/${org}/${project}/tasks/${task.id}`}
-              className="flex gap-4 p-4 rounded-xl border border-red-900/40 bg-red-950/20 hover:border-red-800/60 transition-all group"
+              className="flex gap-4 p-4 rounded-[var(--radius-lg)] bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-150 group"
             >
-              <div className="w-1 rounded-full bg-red-500 shrink-0 self-stretch" />
+              <div className="w-1 rounded-full bg-[var(--danger)] shrink-0 self-stretch" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="ref-code">{task.refCode}</span>
-                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                  <span className="text-[13px] font-medium text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors truncate">
                     {task.title}
                   </span>
                 </div>
                 {task.blockedBy && (
-                  <p className="text-xs text-red-400">
+                  <p className="text-[12px] text-[var(--danger)]">
                     Blocked by: <span className="font-medium">{task.blockedBy}</span>
                   </p>
                 )}
                 {task.blockedReason && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{task.blockedReason}</p>
+                  <p className="text-[12px] text-[var(--fg-muted)] mt-0.5">{task.blockedReason}</p>
                 )}
               </div>
-              <span className="text-xs text-muted-foreground shrink-0 self-start mt-0.5">
+              <span className="text-[11px] text-[var(--fg-muted)] shrink-0 self-start mt-0.5 tabular-nums">
                 {formatRelativeTime(task.updatedAt)}
               </span>
             </Link>

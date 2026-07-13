@@ -3,20 +3,27 @@ import { scopeChanges, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { GitBranch, Plus } from "lucide-react";
-import { formatRelativeTime } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { GitBranch, Clock, CheckCircle2, AlertTriangle } from "@/components/icons";
+import { dailyCounts } from "@/lib/utils";
+import {
+  T, KpiCard, Badge, SectionLabel, PageHeader, BarChart, type ToneKey,
+} from "@/components/dashboard-ui";
+import { NewScopeChangeDialog } from "@/components/dialogs/NewScopeChangeDialog";
+import { createScopeChange } from "@/lib/actions/scope-changes";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
 }
 
-const statusConfig = {
-  pending:  { label: "Pending",  color: "text-yellow-400 bg-yellow-500/10" },
-  accepted: { label: "Accepted", color: "text-green-400 bg-green-500/10" },
-  rejected: { label: "Rejected", color: "text-red-400 bg-red-500/10" },
-  deferred: { label: "Deferred", color: "text-zinc-400 bg-zinc-500/10" },
+const stTone: Record<string, ToneKey> = {
+  pending: "amber", accepted: "green", rejected: "red", deferred: "gray",
 };
+
+function impactFromDays(days: number | null): { label: string; tone: ToneKey } {
+  if (days != null && days >= 3) return { label: "high impact", tone: "red" };
+  if (days != null && days >= 1) return { label: "medium impact", tone: "amber" };
+  return { label: "low impact", tone: "green" };
+}
 
 export default async function ScopeChangesPage({ params }: Props) {
   const { org, project } = await params;
@@ -30,72 +37,109 @@ export default async function ScopeChangesPage({ params }: Props) {
     .where(eq(scopeChanges.projectId, projectData.id))
     .orderBy(scopeChanges.createdAt);
 
-  const pending = changes.filter((c) => c.status === "pending").length;
+  const total = changes.length;
+  const counts = {
+    pending:  changes.filter((c) => c.status === "pending").length,
+    accepted: changes.filter((c) => c.status === "accepted").length,
+    rejected: changes.filter((c) => c.status === "rejected").length,
+    deferred: changes.filter((c) => c.status === "deferred").length,
+  };
+  const dailyScope = dailyCounts(changes.map((c) => c.createdAt), 14);
+  const daysWithScope = dailyScope.filter(Boolean).length;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Scope Changes</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {changes.length} total · {pending} pending decision
-          </p>
-        </div>
-        <Link
-          href={`/${org}/${project}/scope-changes/new`}
-          className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Log Change
-        </Link>
-      </div>
+    <div className="min-h-full w-full max-w-[1100px] mx-auto px-8 py-6 flex flex-col gap-4">
+      <PageHeader title="Scope Changes" meta={`${total} total · ${counts.pending} pending`}>
+        <NewScopeChangeDialog action={createScopeChange.bind(null, projectData.id, org, project)} />
+      </PageHeader>
 
-      {changes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <GitBranch className="h-8 w-8 text-muted-foreground mb-3" />
-          <p className="text-sm font-medium text-foreground">No scope changes yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Log changes when clients ask for new work.</p>
+      {total === 0 ? (
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] flex flex-col items-center justify-center py-24 text-center animate-enter">
+          <GitBranch className="h-8 w-8 text-[var(--fg-disabled)] mb-3" />
+          <p className="text-[13px] font-medium text-[var(--fg)]">No scope changes yet</p>
+          <p className="text-[11px] text-[var(--fg-muted)] mt-1">Log changes when clients ask for new work.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {changes.map((change) => {
-            const sCfg = statusConfig[change.status as keyof typeof statusConfig];
-            return (
-              <Link
-                key={change.id}
-                href={`/${org}/${project}/scope-changes/${change.id}`}
-                className="block p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all group"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      {sCfg && (
-                        <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", sCfg.color)}>
-                          {sCfg.label}
-                        </span>
-                      )}
-                      <span className="text-xs text-muted-foreground capitalize">
-                        {change.source.replace("_", " ")}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                      {change.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                      {change.impactDescription}
-                    </p>
+        <>
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
+            <KpiCard icon={GitBranch}     label="Total"    value={`${total}`}           sub="Changes logged" tone="blue" />
+            <KpiCard icon={Clock}         label="Pending"  value={`${counts.pending}`}  sub="Need decision"  tone="amber" />
+            <KpiCard icon={CheckCircle2}  label="Accepted" value={`${counts.accepted}`} sub="Approved"       tone="green" />
+            <KpiCard icon={AlertTriangle} label="Rejected" value={`${counts.rejected}`} sub="Declined"       tone="red" />
+          </div>
+
+          {/* Status breakdown */}
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 animate-enter" style={{ "--stagger": 2 } as React.CSSProperties}>
+            <SectionLabel>Status breakdown</SectionLabel>
+            <div className="h-2.5 rounded-[var(--radius-full)] overflow-hidden flex gap-px my-4 bg-[var(--bg-muted)]">
+              {(["pending", "accepted", "rejected", "deferred"] as const).map((k) => counts[k] > 0 && (
+                <div key={k} className="h-full" style={{ width: `${(counts[k] / total) * 100}%`, background: T[stTone[k]].fg }} />
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              {(["pending", "accepted", "rejected", "deferred"] as const).map((k) => (
+                <div key={k} className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full" style={{ background: T[stTone[k]].fg }} />
+                    <span className="text-[11px] text-[var(--fg-secondary)] capitalize">{k}</span>
                   </div>
-                  <div className="text-right shrink-0">
-                    {change.estimatedDays != null && (
-                      <p className="text-sm font-semibold text-foreground">+{change.estimatedDays}d</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-0.5">{formatRelativeTime(change.createdAt)}</p>
-                  </div>
+                  <span className="text-[22px] font-semibold tabular-nums tracking-tight text-[var(--fg)] leading-none">{counts[k]}</span>
+                  <span className="text-[11px] text-[var(--fg-muted)] tabular-nums">{Math.round((counts[k] / total) * 100)}%</span>
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Creep trend */}
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 animate-enter" style={{ "--stagger": 3 } as React.CSSProperties}>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <SectionLabel>Creep trend · 14d</SectionLabel>
+                <p className="text-[10px] text-[var(--fg-muted)] mt-0.5">Each bar = 1 day · height = items added</p>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-[24px] font-semibold tabular-nums tracking-tight text-[var(--fg)] leading-none">+{daysWithScope}</span>
+                  <span className="text-[12px] text-[var(--fg-muted)] mb-0.5">days with new scope</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ height: 68, overflow: "hidden" }}>
+              <BarChart points={dailyScope} color={T.red.fg} height={68} annotate />
+            </div>
+          </div>
+
+          {/* Change cards */}
+          <div className="animate-enter" style={{ "--stagger": 4 } as React.CSSProperties}>
+            <SectionLabel>All changes</SectionLabel>
+            <div className="mt-2.5 flex flex-col gap-2">
+              {changes.map((ch) => {
+                const imp = impactFromDays(ch.estimatedDays);
+                return (
+                  <Link
+                    key={ch.id}
+                    href={`/${org}/${project}/scope-changes/${ch.id}`}
+                    className="block bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-4 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-150"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge label={ch.status.charAt(0).toUpperCase() + ch.status.slice(1)} tone={stTone[ch.status] ?? "gray"} />
+                        <Badge label={imp.label} tone={imp.tone} />
+                      </div>
+                      {ch.estimatedDays != null && (
+                        <span className="text-[12px] font-mono font-medium text-[var(--fg-secondary)] shrink-0 tabular-nums">+{ch.estimatedDays}d</span>
+                      )}
+                    </div>
+                    <p className="text-[13.5px] font-medium text-[var(--fg)] mb-1">{ch.title}</p>
+                    <p className="text-[12px] text-[var(--fg-secondary)] leading-relaxed line-clamp-2">{ch.description}</p>
+                    <p className="text-[10px] font-semibold text-[var(--fg-muted)] uppercase tracking-[0.08em] mt-2">
+                      Via {ch.source.replace("_", " ")}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

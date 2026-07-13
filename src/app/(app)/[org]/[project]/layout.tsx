@@ -11,27 +11,31 @@ interface ProjectLayoutProps {
 export default async function ProjectLayout({ children, params }: ProjectLayoutProps) {
   const { org, project } = await params;
 
-  const [projectData] = await db
-    .select({ name: projects.name })
-    .from(projects)
-    .where(eq(projects.slug, project))
-    .limit(1);
-
   const [orgData] = await db
-    .select({ name: organizations.name })
+    .select({ id: organizations.id, name: organizations.name })
     .from(organizations)
     .where(eq(organizations.slug, org))
     .limit(1);
 
+  const allProjects = orgData
+    ? await db
+        .select({ slug: projects.slug, name: projects.name, status: projects.status, description: projects.description })
+        .from(projects)
+        .where(eq(projects.orgId, orgData.id))
+    : [];
+
+  const currentProject = allProjects.find((p) => p.slug === project);
+
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg)] p-2 gap-1">
       <AppSidebar
         org={org}
         project={project}
-        projectName={projectData?.name}
+        projectName={currentProject?.name}
         orgName={orgData?.name}
+        allProjects={allProjects}
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         {children}
       </main>
     </div>

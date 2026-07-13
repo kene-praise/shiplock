@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@/components/icons";
 import { createTask } from "@/lib/actions/tasks";
 import { SubmitButton } from "@/components/submit-button";
 import { db } from "@/db";
@@ -25,31 +25,31 @@ export default async function NewTaskPage({ params }: Props) {
   const action = createTask.bind(null, projectData.id, org, project);
 
   return (
-    <div className="p-6 max-w-xl space-y-6">
-      <Link href={`/${org}/${project}/tasks`} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+    <div className="px-5 py-4 max-w-xl space-y-4">
+      <Link href={`/${org}/${project}/tasks`} className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors">
         <ArrowLeft className="h-3.5 w-3.5" /> Tasks
       </Link>
 
       <div>
-        <h1 className="text-xl font-bold text-foreground">New Task</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">New Task</h1>
         <p className="text-sm text-muted-foreground mt-0.5">A ref code will be assigned automatically.</p>
       </div>
 
       <form action={action} className="space-y-5">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title</label>
-          <input name="title" required placeholder="What needs to be done?" className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition" />
+          <label className="field-label">Title</label>
+          <input name="title" required placeholder="What needs to be done?" className="field-input" />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description <span className="normal-case text-muted-foreground/60">(optional)</span></label>
-          <textarea name="description" rows={3} placeholder="Additional context..." className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition resize-none" />
+          <label className="field-label">Description <span className="normal-case text-muted-foreground/60">(optional)</span></label>
+          <textarea name="description" rows={3} placeholder="Additional context..." className="field-input resize-none" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Priority</label>
-            <select name="priority" className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition">
+            <label className="field-label">Priority</label>
+            <select name="priority" className="field-input">
               <option value="p0_critical">P0 — Critical</option>
               <option value="p1_high">P1 — High</option>
               <option value="p2_medium" selected>P2 — Medium</option>
@@ -57,8 +57,8 @@ export default async function NewTaskPage({ params }: Props) {
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Week</label>
-            <select name="week" className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition">
+            <label className="field-label">Week</label>
+            <select name="week" className="field-input">
               <option value="">— None —</option>
               <option value="W1">W1</option>
               <option value="W2">W2</option>
@@ -72,8 +72,8 @@ export default async function NewTaskPage({ params }: Props) {
 
         {reqs.length > 0 && (
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Linked Requirement <span className="normal-case text-muted-foreground/60">(optional)</span></label>
-            <select name="requirementId" className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition">
+            <label className="field-label">Linked Requirement <span className="normal-case text-muted-foreground/60">(optional)</span></label>
+            <select name="requirementId" className="field-input">
               <option value="">— None —</option>
               {reqs.map((r) => (
                 <option key={r.id} value={r.id}>{r.refCode} — {r.title}</option>
@@ -83,10 +83,10 @@ export default async function NewTaskPage({ params }: Props) {
         )}
 
         <div className="flex gap-3 pt-2">
-          <SubmitButton pendingText="Creating…" className="flex-1 py-2 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground text-sm font-medium transition-colors">
+          <SubmitButton pendingText="Creating…" className="btn-cta flex-1">
             Create Task
           </SubmitButton>
-          <Link href={`/${org}/${project}/tasks`} className="px-4 py-2 rounded-lg bg-muted hover:bg-muted/70 text-muted-foreground text-sm font-medium transition-colors">
+          <Link href={`/${org}/${project}/tasks`} className="btn-secondary">
             Cancel
           </Link>
         </div>

@@ -3,20 +3,22 @@ import { dodItems, requirements, tasks, demoVideos, projects } from "@/db/schema
 import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, Circle, Video, CheckSquare, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, Circle, Video, CheckSquare, ClipboardCheck } from "@/components/icons";
 import { markDodMet, markDodUnmet, linkVideotoDod } from "@/lib/actions/dod";
 import { cn } from "@/lib/utils";
+import { PageHeader, SecondaryLink } from "@/components/dashboard-ui";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
 }
 
-const taskStatusColor: Record<string, string> = {
-  not_started: "text-zinc-400 bg-zinc-500/10",
-  in_progress: "text-blue-400 bg-blue-500/10",
-  blocked:     "text-red-400 bg-red-500/10",
-  done:        "text-green-400 bg-green-500/10",
-  cut:         "text-zinc-500 bg-zinc-500/10",
+const taskStatusTone: Record<string, StatusTone> = {
+  not_started: "neutral",
+  in_progress: "auto",
+  blocked:     "blocked",
+  done:        "approved",
+  cut:         "neutral",
 };
 
 const taskStatusLabel: Record<string, string> = {
@@ -27,11 +29,11 @@ const taskStatusLabel: Record<string, string> = {
   cut:         "Cut",
 };
 
-const demoStatusColor: Record<string, string> = {
-  pending:     "text-yellow-400 bg-yellow-500/10",
-  approved:    "text-green-400 bg-green-500/10",
-  rejected:    "text-red-400 bg-red-500/10",
-  no_response: "text-zinc-400 bg-zinc-500/10",
+const demoStatusTone: Record<string, StatusTone> = {
+  pending:     "pending",
+  approved:    "approved",
+  rejected:    "blocked",
+  no_response: "neutral",
 };
 
 const demoStatusLabel: Record<string, string> = {
@@ -82,51 +84,42 @@ export default async function DodPage({ params }: Props) {
   const pct = totalItems > 0 ? Math.round((metItems / totalItems) * 100) : 0;
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
-            Definition of Done
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Acceptance criteria per feature — with implementing task and proof video
-          </p>
-        </div>
-        <Link
-          href={`/${org}/${project}/demos`}
-          className="text-sm text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-md transition-colors"
-        >
-          Manage videos
-        </Link>
-      </div>
+    <div className="min-h-full w-full max-w-[1100px] mx-auto px-8 py-6 flex flex-col gap-4">
+      <PageHeader
+        title="Definition of Done"
+        meta="Acceptance criteria per feature — with implementing task and proof video"
+      >
+        <SecondaryLink href={`/${org}/${project}/demos`}>Manage videos</SecondaryLink>
+      </PageHeader>
 
       {/* Progress bar */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Overall completion</span>
-          <span className={cn("font-semibold", pct === 100 ? "text-green-400" : "text-foreground")}>
+      <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-4 space-y-2.5 animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
+        <div className="flex items-center justify-between text-[12.5px]">
+          <span className="text-[var(--fg-secondary)]">Overall completion</span>
+          <span
+            className="font-semibold tabular-nums"
+            style={{ color: pct === 100 ? "var(--success)" : "var(--fg)" }}
+          >
             {metItems} / {totalItems} criteria met · {pct}%
           </span>
         </div>
-        <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div className="h-2 rounded-[var(--radius-full)] bg-[var(--bg-muted)] overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-all", pct === 100 ? "bg-green-500" : "bg-primary")}
-            style={{ width: `${pct}%` }}
+            className="h-full rounded-[var(--radius-full)] transition-all"
+            style={{ width: `${pct}%`, background: pct === 100 ? "var(--success)" : "var(--accent)" }}
           />
         </div>
       </div>
 
       {/* Grouped by requirement */}
       {grouped.size === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <ClipboardCheck className="h-8 w-8 text-muted-foreground mb-3" />
-          <p className="text-sm font-medium text-foreground">No DoD criteria yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Criteria are derived from tasks with DoD references.</p>
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] flex flex-col items-center justify-center py-24 text-center animate-enter" style={{ "--stagger": 2 } as React.CSSProperties}>
+          <ClipboardCheck className="h-8 w-8 text-[var(--fg-disabled)] mb-3" />
+          <p className="text-[13px] font-medium text-[var(--fg)]">No DoD criteria yet</p>
+          <p className="text-[11px] text-[var(--fg-muted)] mt-1">Criteria are derived from tasks with DoD references.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-enter" style={{ "--stagger": 2 } as React.CSSProperties}>
           {Array.from(grouped.values()).map(({ req, items: reqItems }) => {
             const met = reqItems.filter((i) => i.dod.met).length;
             const allMet = met === reqItems.length;
@@ -135,45 +128,44 @@ export default async function DodPage({ params }: Props) {
               <section key={req.id} className="space-y-2">
                 {/* Requirement header */}
                 <div className="flex items-center gap-3">
-                  <span className={cn(
-                    "text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wide font-mono",
-                    req.classification === "post_mvp" ? "text-zinc-400 bg-zinc-500/10" : "text-indigo-400 bg-indigo-500/10"
-                  )}>
-                    {req.refCode}
-                  </span>
-                  <span className="text-sm font-semibold text-foreground flex-1 truncate">{req.title}</span>
-                  <span className={cn(
-                    "text-xs font-medium",
-                    allMet ? "text-green-400" : "text-muted-foreground"
-                  )}>
+                  <span className="ref-code">{req.refCode}</span>
+                  <span className="text-[13px] font-semibold text-[var(--fg)] flex-1 truncate">{req.title}</span>
+                  <span
+                    className="text-[12px] font-mono font-medium tabular-nums"
+                    style={{ color: allMet ? "var(--success)" : "var(--fg-muted)" }}
+                  >
                     {met}/{reqItems.length}
                   </span>
                 </div>
 
                 {/* DoD items for this requirement */}
-                <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
+                <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)] overflow-hidden">
                   {reqItems.map(({ dod, task, demo }) => {
                     const metAction = markDodMet.bind(null, dod.id, org, project);
                     const unmetAction = markDodUnmet.bind(null, dod.id, org, project);
                     const demosForReq = allDemos.filter((d) => d.requirementId === req.id || !d.requirementId);
 
                     return (
-                      <div key={dod.id} className={cn("p-4 space-y-3", dod.met && "bg-green-950/10")}>
+                      <div
+                        key={dod.id}
+                        className="p-4 space-y-3"
+                        style={dod.met ? { background: "var(--success-muted)" } : undefined}
+                      >
                         {/* Criterion row */}
                         <div className="flex items-start gap-3">
                           <form action={dod.met ? unmetAction : metAction} className="shrink-0 mt-0.5">
                             <button type="submit" className="focus:outline-none">
                               {dod.met
-                                ? <CheckCircle2 className="h-4.5 w-4.5 text-green-400" />
-                                : <Circle className="h-4.5 w-4.5 text-muted-foreground hover:text-foreground transition-colors" />
+                                ? <CheckCircle2 className="h-4.5 w-4.5 text-[var(--success)]" />
+                                : <Circle className="h-4.5 w-4.5 text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors" />
                               }
                             </button>
                           </form>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-[10px] font-mono font-semibold text-muted-foreground">{dod.dodRef}</span>
+                              <span className="text-[10px] font-mono font-medium text-[var(--fg-muted)]">{dod.dodRef}</span>
                             </div>
-                            <p className={cn("text-sm", dod.met ? "text-muted-foreground line-through" : "text-foreground")}>
+                            <p className={cn("text-[13px]", dod.met ? "text-[var(--fg-muted)] line-through" : "text-[var(--fg)]")}>
                               {dod.criterion}
                             </p>
                           </div>
@@ -184,17 +176,17 @@ export default async function DodPage({ params }: Props) {
                           {task ? (
                             <Link
                               href={`/${org}/${project}/tasks/${task.id}`}
-                              className="flex items-center gap-1.5 text-xs hover:text-foreground transition-colors group"
+                              className="flex items-center gap-1.5 text-[12px] transition-colors group"
                             >
-                              <CheckSquare className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
-                              <span className="font-mono text-muted-foreground">{task.refCode}</span>
-                              <span className="text-muted-foreground truncate max-w-[200px]">{task.title}</span>
-                              <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", taskStatusColor[task.status])}>
+                              <CheckSquare className="h-3.5 w-3.5 text-[var(--fg-muted)] group-hover:text-[var(--fg)]" />
+                              <span className="font-mono text-[var(--fg-muted)]">{task.refCode}</span>
+                              <span className="text-[var(--fg-secondary)] group-hover:text-[var(--fg)] truncate max-w-[200px]">{task.title}</span>
+                              <StatusBadge tone={taskStatusTone[task.status] ?? "neutral"} dot={false}>
                                 {taskStatusLabel[task.status]}
-                              </span>
+                              </StatusBadge>
                             </Link>
                           ) : (
-                            <span className="text-xs text-muted-foreground/50">No task linked</span>
+                            <span className="text-[12px] text-[var(--fg-disabled)]">No task linked</span>
                           )}
 
                           {demo ? (
@@ -202,13 +194,13 @@ export default async function DodPage({ params }: Props) {
                               href={demo.videoUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1.5 text-xs hover:text-foreground transition-colors group"
+                              className="flex items-center gap-1.5 text-[12px] transition-colors group"
                             >
-                              <Video className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
-                              <span className="text-muted-foreground truncate max-w-[180px]">{demo.title}</span>
-                              <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", demoStatusColor[demo.clientStatus])}>
+                              <Video className="h-3.5 w-3.5 text-[var(--fg-muted)] group-hover:text-[var(--fg)]" />
+                              <span className="text-[var(--fg-secondary)] group-hover:text-[var(--fg)] truncate max-w-[180px]">{demo.title}</span>
+                              <StatusBadge tone={demoStatusTone[demo.clientStatus] ?? "neutral"} dot={false}>
                                 {demoStatusLabel[demo.clientStatus]}
-                              </span>
+                              </StatusBadge>
                             </a>
                           ) : (
                             <form action={async (fd: FormData) => {
@@ -217,10 +209,10 @@ export default async function DodPage({ params }: Props) {
                               if (vid) await linkVideotoDod(dod.id, vid, org, project);
                             }}>
                               <div className="flex items-center gap-1.5">
-                                <Video className="h-3.5 w-3.5 text-muted-foreground/40" />
+                                <Video className="h-3.5 w-3.5 text-[var(--fg-disabled)]" />
                                 <select
                                   name="demoVideoId"
-                                  className="text-xs bg-transparent border border-border rounded px-1.5 py-0.5 text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                                  className="text-[12px] bg-transparent border border-[var(--border)] rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[var(--fg-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                                 >
                                   <option value="">Attach proof video…</option>
                                   {demosForReq.map((d) => (
@@ -228,7 +220,7 @@ export default async function DodPage({ params }: Props) {
                                   ))}
                                 </select>
                                 {demosForReq.length > 0 && (
-                                  <button type="submit" className="text-xs text-primary hover:underline">Link</button>
+                                  <button type="submit" className="text-[12px] text-[var(--accent)] hover:underline">Link</button>
                                 )}
                               </div>
                             </form>

@@ -7,7 +7,7 @@ import {
   ArrowLeft, CheckSquare, Clock,
   CircleCheck, CircleDot, CircleMinus, AlertTriangle,
   ClipboardCheck, Video, Send,
-} from "lucide-react";
+} from "@/components/icons";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { sendRequirementForReview, deleteRequirement } from "@/lib/actions/requirements";
@@ -17,16 +17,16 @@ interface Props {
 }
 
 const statusStyles: Record<string, string> = {
-  draft: "bg-zinc-500/15 text-zinc-400",
-  pending_approval: "bg-yellow-500/15 text-yellow-400",
-  approved: "bg-green-500/15 text-green-400",
-  disputed: "bg-orange-500/15 text-orange-400",
+  draft: "bg-[var(--component-fill)] text-[var(--fg-muted)]",
+  pending_approval: "bg-[var(--warning-muted)] text-[var(--warning)]",
+  approved: "bg-[var(--success-muted)] text-[var(--success)]",
+  disputed: "bg-[var(--disputed-muted)] text-[var(--disputed)]",
 };
 
 const classStyles: Record<string, string> = {
-  mvp: "bg-indigo-500/15 text-indigo-400",
-  post_mvp: "bg-blue-500/15 text-blue-400",
-  out_of_scope: "bg-zinc-500/15 text-zinc-400",
+  mvp: "bg-[var(--accent-muted)] text-[var(--accent)]",
+  post_mvp: "bg-[var(--accent-muted)] text-[var(--accent)]",
+  out_of_scope: "bg-[var(--component-fill)] text-[var(--fg-muted)]",
 };
 
 const taskStatusIcon: Record<string, React.ElementType> = {
@@ -38,11 +38,11 @@ const taskStatusIcon: Record<string, React.ElementType> = {
 };
 
 const taskStatusColor: Record<string, string> = {
-  not_started: "text-zinc-500",
-  in_progress: "text-blue-400",
-  blocked: "text-red-400",
-  done: "text-green-400",
-  cut: "text-zinc-600",
+  not_started: "text-[var(--fg-muted)]",
+  in_progress: "text-[var(--accent)]",
+  blocked: "text-[var(--danger)]",
+  done: "text-[var(--success)]",
+  cut: "text-[var(--fg-muted)]",
 };
 
 export default async function RequirementDetailPage({ params }: Props) {
@@ -80,11 +80,11 @@ export default async function RequirementDetailPage({ params }: Props) {
     .where(eq(demoVideos.requirementId, id));
 
   return (
-    <div className="p-6 max-w-3xl space-y-6">
+    <div className="px-5 py-4 max-w-3xl space-y-4">
       {/* Back */}
       <Link
         href={`/${org}/${project}/requirements`}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Requirements
@@ -95,14 +95,14 @@ export default async function RequirementDetailPage({ params }: Props) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="ref-code">{req.refCode}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyles[req.status] ?? "bg-zinc-500/15 text-zinc-400"}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyles[req.status] ?? "bg-[var(--component-fill)] text-[var(--fg-muted)]"}`}>
               {req.status.replace(/_/g, " ")}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${classStyles[req.classification] ?? ""}`}>
               {req.classification.replace(/_/g, " ")}
             </span>
             {req.autoApproved && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-500/15 text-indigo-400">
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[var(--accent-muted)] text-[var(--accent)]">
                 Auto-approved
               </span>
             )}
@@ -111,7 +111,7 @@ export default async function RequirementDetailPage({ params }: Props) {
             <form action={deleteRequirement.bind(null, req.id, org, project)}>
               <button
                 type="submit"
-                className="flex items-center gap-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-1.5 rounded-md transition-colors"
+                className="btn-danger !h-8 !px-3.5 !text-[12.5px]"
               >
                 Delete
               </button>
@@ -120,7 +120,7 @@ export default async function RequirementDetailPage({ params }: Props) {
               <form action={sendRequirementForReview.bind(null, req.id, org, project)}>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors shrink-0"
+                  className="btn-cta !h-8 !px-3.5 !text-[12.5px] shrink-0"
                 >
                   <Send className="h-3.5 w-3.5" />
                   Send for review
@@ -128,14 +128,14 @@ export default async function RequirementDetailPage({ params }: Props) {
               </form>
             )}
             {req.status === "pending_approval" && (
-              <div className="flex items-center gap-1.5 text-xs text-yellow-400 shrink-0">
+              <div className="flex items-center gap-1.5 text-xs text-[var(--warning)] shrink-0">
                 <Clock className="h-3.5 w-3.5" />
                 Awaiting client response
               </div>
             )}
           </div>
         </div>
-        <h1 className="text-xl font-bold text-foreground">{req.title}</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">{req.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">{req.description}</p>
       </div>
 
@@ -156,15 +156,15 @@ export default async function RequirementDetailPage({ params }: Props) {
         {req.clientApprovedAt && (
           <div className="rounded-xl border border-border bg-card p-4 space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Approved</p>
-            <p className="text-sm text-green-400">{formatDate(req.clientApprovedAt)}</p>
+            <p className="text-sm text-[var(--success)]">{formatDate(req.clientApprovedAt)}</p>
           </div>
         )}
         {req.autoApproveDeadline && req.status === "pending_approval" && (
-          <div className="rounded-xl border border-yellow-900/40 bg-yellow-950/20 p-4 space-y-1">
-            <p className="text-xs text-yellow-500 uppercase tracking-wide font-medium flex items-center gap-1">
+          <div className="rounded-xl border border-[var(--warning)]/30 bg-[var(--warning-muted)] p-4 space-y-1">
+            <p className="text-xs text-[var(--warning)] uppercase tracking-wide font-medium flex items-center gap-1">
               <Clock className="h-3 w-3" /> Auto-approve deadline
             </p>
-            <p className="text-sm text-yellow-400">{formatDate(req.autoApproveDeadline)}</p>
+            <p className="text-sm text-[var(--warning)]">{formatDate(req.autoApproveDeadline)}</p>
           </div>
         )}
       </div>
@@ -181,7 +181,7 @@ export default async function RequirementDetailPage({ params }: Props) {
           </h2>
           <Link
             href={`/${org}/${project}/tasks`}
-            className="text-xs text-primary hover:underline"
+            className="text-xs text-[var(--accent)] hover:underline"
           >
             View all tasks
           </Link>
@@ -193,7 +193,7 @@ export default async function RequirementDetailPage({ params }: Props) {
           <div className="space-y-2">
             {reqTasks.map((task) => {
               const Icon = taskStatusIcon[task.status] ?? CircleMinus;
-              const color = taskStatusColor[task.status] ?? "text-zinc-500";
+              const color = taskStatusColor[task.status] ?? "text-[var(--fg-muted)]";
               return (
                 <Link
                   key={task.id}
@@ -202,7 +202,7 @@ export default async function RequirementDetailPage({ params }: Props) {
                 >
                   <Icon className={`h-4 w-4 shrink-0 ${color}`} />
                   <span className="ref-code">{task.refCode}</span>
-                  <span className="text-sm text-foreground flex-1 truncate group-hover:text-primary transition-colors">
+                  <span className="text-sm text-foreground flex-1 truncate group-hover:text-[var(--accent)] transition-colors">
                     {task.title}
                   </span>
                   <span className={`text-xs capitalize ${color}`}>
@@ -226,15 +226,15 @@ export default async function RequirementDetailPage({ params }: Props) {
                 {reqDodItems.filter((i) => i.dod.met).length}/{reqDodItems.length} met
               </span>
             </h2>
-            <Link href={`/${org}/${project}/dod`} className="text-xs text-primary hover:underline">
+            <Link href={`/${org}/${project}/dod`} className="text-xs text-[var(--accent)] hover:underline">
               Full checklist →
             </Link>
           </div>
           <div className="space-y-2">
             {reqDodItems.map(({ dod, task, demo }) => (
-              <div key={dod.id} className={cn("flex items-start gap-3 p-3 rounded-lg", dod.met ? "bg-green-950/20" : "bg-muted/30")}>
+              <div key={dod.id} className={cn("flex items-start gap-3 p-3 rounded-lg", dod.met ? "bg-[var(--success-muted)]" : "bg-muted/30")}>
                 {dod.met
-                  ? <CircleCheck className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
+                  ? <CircleCheck className="h-4 w-4 text-[var(--success)] shrink-0 mt-0.5" />
                   : <CircleMinus className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                 }
                 <div className="flex-1 min-w-0 space-y-1">
@@ -284,14 +284,14 @@ export default async function RequirementDetailPage({ params }: Props) {
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
               >
                 <Video className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm text-foreground flex-1 truncate group-hover:text-primary transition-colors">
+                <span className="text-sm text-foreground flex-1 truncate group-hover:text-[var(--accent)] transition-colors">
                   {demo.title}
                 </span>
                 <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", {
-                  "text-green-400 bg-green-500/10": demo.clientStatus === "approved",
-                  "text-yellow-400 bg-yellow-500/10": demo.clientStatus === "pending",
-                  "text-red-400 bg-red-500/10": demo.clientStatus === "rejected",
-                  "text-zinc-400 bg-zinc-500/10": demo.clientStatus === "no_response",
+                  "text-[var(--success)] bg-[var(--success-muted)]": demo.clientStatus === "approved",
+                  "text-[var(--warning)] bg-[var(--warning-muted)]": demo.clientStatus === "pending",
+                  "text-[var(--danger)] bg-[var(--danger-muted)]": demo.clientStatus === "rejected",
+                  "text-[var(--fg-muted)] bg-[var(--component-fill)]": demo.clientStatus === "no_response",
                 })}>
                   {demo.clientStatus.replace("_", " ")}
                 </span>

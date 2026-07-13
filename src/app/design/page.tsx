@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, Plus, Search, ArrowRight, Clock, CheckCircle2, Video, FileText } from "lucide-react";
+import { Lock, Plus, Search, ArrowRight, Clock, CheckCircle2, Video, FileText } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardFooter } from "@/components/ui/card";

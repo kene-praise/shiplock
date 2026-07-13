@@ -3,7 +3,7 @@ import { tasks, requirements } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, FileCheck } from "lucide-react";
+import { ArrowLeft, AlertTriangle, FileCheck } from "@/components/icons";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -12,18 +12,18 @@ interface Props {
 }
 
 const statusConfig = {
-  not_started: { label: "Not Started", color: "text-zinc-400", bg: "bg-zinc-500/10" },
-  in_progress: { label: "In Progress", color: "text-blue-400", bg: "bg-blue-500/10" },
-  blocked:     { label: "Blocked",     color: "text-red-400",  bg: "bg-red-500/10" },
-  done:        { label: "Done",        color: "text-green-400", bg: "bg-green-500/10" },
-  cut:         { label: "Cut",         color: "text-zinc-600", bg: "bg-zinc-500/5" },
+  not_started: { label: "Not Started", color: "text-[var(--fg-muted)]", bg: "bg-[var(--component-fill)]" },
+  in_progress: { label: "In Progress", color: "text-[var(--accent)]", bg: "bg-[var(--accent-muted)]" },
+  blocked:     { label: "Blocked",     color: "text-[var(--danger)]",  bg: "bg-[var(--danger-muted)]" },
+  done:        { label: "Done",        color: "text-[var(--success)]", bg: "bg-[var(--success-muted)]" },
+  cut:         { label: "Cut",         color: "text-[var(--fg-muted)]", bg: "bg-[var(--component-fill)]" },
 };
 
 const priorityConfig = {
-  p0_critical: { label: "P0 Critical", color: "text-red-400 bg-red-500/10" },
-  p1_high:     { label: "P1 High",     color: "text-orange-400 bg-orange-500/10" },
-  p2_medium:   { label: "P2 Medium",   color: "text-yellow-400 bg-yellow-500/10" },
-  p3_low:      { label: "P3 Low",      color: "text-zinc-400 bg-zinc-500/10" },
+  p0_critical: { label: "P0 Critical", color: "text-[var(--danger)] bg-[var(--danger-muted)]" },
+  p1_high:     { label: "P1 High",     color: "text-[var(--disputed)] bg-[var(--disputed-muted)]" },
+  p2_medium:   { label: "P2 Medium",   color: "text-[var(--warning)] bg-[var(--warning-muted)]" },
+  p3_low:      { label: "P3 Low",      color: "text-[var(--fg-muted)] bg-[var(--component-fill)]" },
 };
 
 export default async function TaskDetailPage({ params }: Props) {
@@ -40,11 +40,11 @@ export default async function TaskDetailPage({ params }: Props) {
   const pCfg = priorityConfig[task.priority as keyof typeof priorityConfig];
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="px-5 py-4 max-w-2xl space-y-4">
       {/* Back */}
       <Link
         href={`/${org}/${project}/tasks`}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Tasks
@@ -70,7 +70,7 @@ export default async function TaskDetailPage({ params }: Props) {
             </span>
           )}
         </div>
-        <h1 className="text-xl font-bold text-foreground">{task.title}</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">{task.title}</h1>
         {task.description && (
           <p className="text-sm text-muted-foreground leading-relaxed">{task.description}</p>
         )}
@@ -78,14 +78,14 @@ export default async function TaskDetailPage({ params }: Props) {
 
       {/* Blocked warning */}
       {task.status === "blocked" && (
-        <div className="flex gap-3 p-4 rounded-xl bg-red-950/30 border border-red-900/40">
-          <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+        <div className="flex gap-3 p-4 rounded-xl bg-[var(--danger-muted)] border border-[var(--danger)]/30">
+          <AlertTriangle className="h-4 w-4 text-[var(--danger)] mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-red-400">
+            <p className="text-sm font-medium text-[var(--danger)]">
               Blocked by: {task.blockedBy ?? "Unknown"}
             </p>
             {task.blockedReason && (
-              <p className="text-xs text-red-400/70 mt-0.5">{task.blockedReason}</p>
+              <p className="text-xs text-[var(--danger)]/70 mt-0.5">{task.blockedReason}</p>
             )}
           </div>
         </div>
@@ -107,7 +107,7 @@ export default async function TaskDetailPage({ params }: Props) {
         {task.completedAt && (
           <div className="rounded-xl border border-border bg-card p-4 space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Completed</p>
-            <p className="text-sm text-green-400">{formatDate(task.completedAt)}</p>
+            <p className="text-sm text-[var(--success)]">{formatDate(task.completedAt)}</p>
           </div>
         )}
         {task.dodRef && (
@@ -124,11 +124,11 @@ export default async function TaskDetailPage({ params }: Props) {
           <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-3">Linked Requirement</p>
           <Link
             href={`/${org}/${project}/requirements/${req.id}`}
-            className="flex items-center gap-3 hover:text-primary transition-colors group"
+            className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors group"
           >
-            <FileCheck className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+            <FileCheck className="h-4 w-4 text-muted-foreground group-hover:text-[var(--accent)]" />
             <span className="ref-code">{req.refCode}</span>
-            <span className="text-sm text-foreground group-hover:text-primary truncate">{req.title}</span>
+            <span className="text-sm text-foreground group-hover:text-[var(--accent)] truncate">{req.title}</span>
           </Link>
         </div>
       )}

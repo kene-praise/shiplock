@@ -2,26 +2,32 @@ import Link from "next/link";
 import { db } from "@/db";
 import { projects, organizations } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { Lock, Plus, Clock, CheckCircle2, PauseCircle, Archive } from "lucide-react";
+import { Clock } from "@/components/icons";
 import { formatDate } from "@/lib/utils";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { NewProjectDialog } from "@/components/dialogs/NewProjectDialog";
+import { createProject } from "@/lib/actions/projects";
 
 interface ProjectsPageProps {
   params: Promise<{ org: string }>;
 }
 
-const statusIcon = {
-  active: CheckCircle2,
-  paused: PauseCircle,
-  completed: CheckCircle2,
-  archived: Archive,
+const statusTone: Record<string, StatusTone> = {
+  active: "approved",
+  paused: "pending",
+  completed: "auto",
+  archived: "neutral",
 };
 
-const statusColor = {
-  active: "text-green-400",
-  paused: "text-yellow-400",
-  completed: "text-indigo-400",
-  archived: "text-zinc-500",
-};
+function StatusDot({ status }: { status: string }) {
+  const color =
+    status === "active" ? "var(--success)"
+    : status === "paused" ? "var(--warning)"
+    : status === "completed" ? "var(--accent)"
+    : "var(--fg-disabled)";
+  return <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />;
+}
 
 export default async function ProjectsPage({ params }: ProjectsPageProps) {
   const { org } = await params;
@@ -33,97 +39,104 @@ export default async function ProjectsPage({ params }: ProjectsPageProps) {
     .limit(1);
 
   const projectList = orgData
-    ? await db
-        .select()
-        .from(projects)
-        .where(eq(projects.orgId, orgData.id))
+    ? await db.select().from(projects).where(eq(projects.orgId, orgData.id))
     : [];
 
+  const active = projectList.filter((p) => p.status === "active").length;
+
+  const allProjects = projectList.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    status: p.status,
+    description: p.description,
+  }));
+
+  const createAction = orgData
+    ? createProject.bind(null, orgData.id, org)
+    : undefined;
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top bar */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <Lock className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-sm">ShipLock</span>
-          </Link>
-          <span className="text-muted-foreground text-sm">/</span>
-          <span className="text-sm text-muted-foreground">{orgData?.name ?? org}</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/${org}/settings`}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Settings
-          </Link>
-          <Link
-            href={`/${org}/projects/new`}
-            className="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Project
-          </Link>
-        </div>
-      </header>
+    <div className="flex h-screen overflow-hidden bg-[var(--bg)] p-2 gap-1">
+      <AppSidebar org={org} orgName={orgData?.name} allProjects={allProjects} />
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {projectList.length} project{projectList.length !== 1 ? "s" : ""} in {orgData?.name ?? org}
-          </p>
-        </div>
-
-        {projectList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-4">
-              <Lock className="h-5 w-5 text-muted-foreground" />
+      <main className="flex-1 min-w-0 overflow-y-auto">
+          <div className="px-8 py-6">
+            {/* Page heading */}
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div>
+                <h1 className="text-[20px] font-semibold tracking-tight text-[var(--fg)] leading-none mb-1.5">
+                  Projects
+                </h1>
+                <p className="text-[13px] text-[var(--fg-muted)]">
+                  {projectList.length === 0
+                    ? "No projects yet"
+                    : `${projectList.length} project${projectList.length !== 1 ? "s" : ""} · ${active} active`}
+                </p>
+              </div>
+              {createAction && <NewProjectDialog action={createAction} />}
             </div>
-            <p className="text-sm font-medium text-foreground">No projects yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Create your first project to start protecting deliveries.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {projectList.map((p) => {
-              const Icon = statusIcon[p.status] ?? CheckCircle2;
-              const color = statusColor[p.status] ?? "text-zinc-500";
-              return (
-                <Link
-                  key={p.id}
-                  href={`/${org}/${p.slug}/dashboard`}
-                  className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-card/80 transition-all group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Lock className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
-                      {p.description && (
-                        <p className="text-xs text-muted-foreground truncate max-w-lg mt-0.5">{p.description}</p>
+
+            {projectList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed border-[var(--border)] rounded-[var(--radius-lg)]">
+                <p className="text-[13px] font-medium text-[var(--fg)]">No projects yet</p>
+                <p className="text-[12px] text-[var(--fg-muted)] mt-1 max-w-[260px]">
+                  Create your first project to start protecting your deliveries.
+                </p>
+                {createAction && <div className="mt-5"><NewProjectDialog action={createAction} /></div>}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {projectList.map((p, i) => (
+                  <Link
+                    key={p.id}
+                    href={`/${org}/${p.slug}/dashboard`}
+                    className="group flex flex-col bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden hover:border-[var(--border-strong)] transition-colors animate-enter"
+                    style={{ "--stagger": i } as React.CSSProperties}
+                  >
+                    <div className="flex-1 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <StatusDot status={p.status} />
+                        <span className="text-[13.5px] font-semibold text-[var(--fg)] truncate leading-tight">
+                          {p.name}
+                        </span>
+                      </div>
+                      {p.description ? (
+                        <p className="text-[12px] text-[var(--fg-muted)] leading-relaxed line-clamp-2">
+                          {p.description}
+                        </p>
+                      ) : (
+                        <p className="text-[12px] text-[var(--fg-disabled)] italic">No description</p>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-6 shrink-0 ml-4">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className={`h-3.5 w-3.5 ${color}`} />
-                      <span className={`text-xs font-medium capitalize ${color}`}>{p.status}</span>
+                    <div
+                      className="flex items-center justify-between px-4 py-2.5"
+                      style={{ background: "var(--card-footer)", borderTop: "1px solid var(--border-footer)" }}
+                    >
+                      <StatusBadge tone={statusTone[p.status] ?? "neutral"}>
+                        <span className="capitalize">{p.status}</span>
+                      </StatusBadge>
+                      {p.mvpDeadline && (
+                        <span className="flex items-center gap-1 text-[11px] text-[var(--fg-muted)] tabular-nums">
+                          <Clock size={11} />
+                          {formatDate(p.mvpDeadline)}
+                        </span>
+                      )}
                     </div>
-                    {p.mvpDeadline && (
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5" />
-                        <span className="text-xs">{formatDate(p.mvpDeadline)}</span>
-                      </div>
-                    )}
+                  </Link>
+                ))}
+
+                {createAction && (
+                  <div
+                    className="animate-enter"
+                    style={{ "--stagger": projectList.length } as React.CSSProperties}
+                  >
+                    <NewProjectDialog action={createAction} asCard />
                   </div>
-                </Link>
-              );
-            })}
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

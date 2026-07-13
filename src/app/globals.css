@@ -244,6 +244,17 @@
   }
 }
 
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @layer utilities {
   .text-balance { text-wrap: balance; }
 
@@ -254,6 +265,15 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .animate-enter { animation: none; }
+  }
+
+  /* Dropdown/popover entrance — quick settle from above */
+  .popover-in {
+    animation: popover-in 140ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: top;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .popover-in { animation: none; }
   }
 
   /* Monospace ref codes like REQ-001, T-041 — accent chip */
@@ -267,4 +287,94 @@
   .shadow-soft { box-shadow: var(--shadow-md); }
   .shadow-pop { box-shadow: var(--shadow-lg); }
   .shadow-btn { box-shadow: var(--shadow-sm); }
+
+  /* Button classes — for plain <button>/<a>/SubmitButton where the
+     framer-motion Button component can't be used (server components) */
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    color: #fff;
+    border-radius: var(--radius-md);
+    background: var(--cta-bg);
+    border: 1px solid var(--cta-border);
+    box-shadow: var(--cta-shadow);
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .btn-cta:hover { filter: brightness(1.06); }
+  .btn-cta:active { transform: scale(0.97); }
+  .btn-cta:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--fg);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+  .btn-secondary:hover { background: var(--bg-muted); }
+  .btn-secondary:active { transform: scale(0.97); }
+
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--danger);
+    border-radius: var(--radius-md);
+    background: var(--danger-muted);
+    border: 1px solid var(--danger);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  /* Form field — matches the ui/Input treatment for raw inputs/selects */
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--fg-secondary);
+  }
+  .field-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    color: var(--fg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field-input::placeholder { color: var(--fg-muted); }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
 }

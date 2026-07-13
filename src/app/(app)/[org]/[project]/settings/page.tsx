@@ -2,8 +2,9 @@ import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Settings } from "lucide-react";
 import { updateProject, archiveProject } from "@/lib/actions/projects";
+import { PageHeader, SectionLabel } from "@/components/dashboard-ui";
+import { SubmitButton } from "@/components/submit-button";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
@@ -19,105 +20,76 @@ export default async function ProjectSettingsPage({ params }: Props) {
   const archive = archiveProject.bind(null, proj.id, org);
 
   return (
-    <div className="p-6 max-w-2xl space-y-8">
-      <div>
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <Settings className="h-5 w-5 text-muted-foreground" />
-          Project Settings
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{proj.name}</p>
-      </div>
+    <div className="min-h-full w-full max-w-2xl mx-auto px-8 py-6 flex flex-col gap-4">
+      <PageHeader title="Project Settings" meta={proj.name} />
 
       {/* General */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-foreground border-b border-border pb-2">General</h2>
-        <form action={save} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Project Name</label>
-            <input
-              name="name"
-              required
-              defaultValue={proj.name}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-            <textarea
-              name="description"
-              defaultValue={proj.description ?? ""}
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition resize-none"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+      <section className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
+        <form action={save}>
+          <div className="p-5 space-y-4">
+            <SectionLabel>General</SectionLabel>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</label>
-              <select
-                name="status"
-                defaultValue={proj.status}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
-              >
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="completed">Completed</option>
-                <option value="archived">Archived</option>
-              </select>
+              <label className="field-label block">Project Name</label>
+              <input name="name" required defaultValue={proj.name} className="field-input" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">MVP Deadline</label>
-              <input
-                name="mvpDeadline"
-                type="date"
-                defaultValue={proj.mvpDeadline ?? ""}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
+              <label className="field-label block">Description</label>
+              <textarea
+                name="description"
+                defaultValue={proj.description ?? ""}
+                rows={2}
+                className="field-input resize-none"
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="field-label block">Status</label>
+                <select name="status" defaultValue={proj.status} className="field-input">
+                  <option value="active">Active</option>
+                  <option value="paused">Paused</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="field-label block">MVP Deadline</label>
+                <input name="mvpDeadline" type="date" defaultValue={proj.mvpDeadline ?? ""} className="field-input" />
+              </div>
+            </div>
           </div>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium transition-colors"
+          <div
+            className="px-5 py-3 flex justify-end"
+            style={{ background: "var(--card-footer)", borderTop: "1px solid var(--border-footer)" }}
           >
-            Save Changes
-          </button>
+            <SubmitButton pendingText="Saving…" className="btn-cta">
+              Save Changes
+            </SubmitButton>
+          </div>
         </form>
       </section>
 
       {/* Auto-approve */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-foreground border-b border-border pb-2">
-          Auto-Approve Settings
-        </h2>
+      <section className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-5 space-y-4 animate-enter" style={{ "--stagger": 2 } as React.CSSProperties}>
+        <SectionLabel>Auto-Approve Settings</SectionLabel>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Auto-approve after (hours)
-          </label>
-          <input
-            type="number"
-            defaultValue={48}
-            min={12}
-            max={168}
-            className="w-40 px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
+          <label className="field-label block">Auto-approve after (hours)</label>
+          <input type="number" defaultValue={48} min={12} max={168} className="field-input !w-40 tabular-nums" />
+          <p className="text-[11.5px] text-[var(--fg-muted)] mt-1">
             Requirements and demos sent for review auto-approve if the client doesn&apos;t respond within this window.
           </p>
         </div>
       </section>
 
       {/* Danger zone */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-red-400 border-b border-red-900/40 pb-2">Danger Zone</h2>
-        <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-4 flex items-center justify-between">
+      <section className="space-y-2.5 animate-enter" style={{ "--stagger": 3 } as React.CSSProperties}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--danger)]">Danger Zone</p>
+        <div className="rounded-[var(--radius-lg)] border border-[var(--danger)]/25 bg-[var(--danger-muted)] p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">Archive this project</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Hides the project from the list. Data is preserved.</p>
+            <p className="text-[13px] font-medium text-[var(--fg)]">Archive this project</p>
+            <p className="text-[11.5px] text-[var(--fg-secondary)] mt-0.5">Hides the project from the list. Data is preserved.</p>
           </div>
           <form action={archive}>
-            <button
-              type="submit"
-              className="px-3 py-1.5 rounded-lg border border-red-800 text-red-400 text-sm hover:bg-red-900/30 transition-colors"
-            >
+            <button type="submit" className="btn-danger !h-8 !px-3.5 !text-[12.5px]">
               Archive
             </button>
           </form>

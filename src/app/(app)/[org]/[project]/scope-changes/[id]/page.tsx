@@ -3,7 +3,7 @@ import { scopeChanges } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, GitBranch } from "lucide-react";
+import { ArrowLeft, GitBranch } from "@/components/icons";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { updateScopeChangeStatus } from "@/lib/actions/scope-changes";
@@ -13,10 +13,10 @@ interface Props {
 }
 
 const statusConfig = {
-  pending:  { label: "Pending Decision", color: "text-yellow-400 bg-yellow-500/10" },
-  accepted: { label: "Accepted",         color: "text-green-400 bg-green-500/10" },
-  rejected: { label: "Rejected",         color: "text-red-400 bg-red-500/10" },
-  deferred: { label: "Deferred",         color: "text-zinc-400 bg-zinc-500/10" },
+  pending:  { label: "Pending Decision", color: "text-[var(--warning)] bg-[var(--warning-muted)]" },
+  accepted: { label: "Accepted",         color: "text-[var(--success)] bg-[var(--success-muted)]" },
+  rejected: { label: "Rejected",         color: "text-[var(--danger)] bg-[var(--danger-muted)]" },
+  deferred: { label: "Deferred",         color: "text-[var(--fg-muted)] bg-[var(--component-fill)]" },
 };
 
 export default async function ScopeChangeDetailPage({ params }: Props) {
@@ -32,10 +32,10 @@ export default async function ScopeChangeDetailPage({ params }: Props) {
   const defer  = updateScopeChangeStatus.bind(null, id, "deferred", org, project);
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="px-5 py-4 max-w-2xl space-y-4">
       <Link
         href={`/${org}/${project}/scope-changes`}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Scope Changes
@@ -53,15 +53,15 @@ export default async function ScopeChangeDetailPage({ params }: Props) {
             {change.source.replace("_", " ")}
           </span>
         </div>
-        <h1 className="text-xl font-bold text-foreground">{change.title}</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight text-[var(--fg)]">{change.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed">{change.description}</p>
       </div>
 
-      <div className="rounded-xl border border-orange-900/40 bg-orange-950/20 p-4 space-y-2">
-        <p className="text-xs text-orange-400 uppercase tracking-wide font-medium">Impact</p>
+      <div className="rounded-xl border border-[var(--disputed)]/30 bg-[var(--disputed-muted)] p-4 space-y-2">
+        <p className="text-xs text-[var(--disputed)] uppercase tracking-wide font-medium">Impact</p>
         <p className="text-sm text-foreground leading-relaxed">{change.impactDescription}</p>
         {change.estimatedDays != null && (
-          <p className="text-sm font-semibold text-orange-400">+{change.estimatedDays} estimated days</p>
+          <p className="text-sm font-semibold text-[var(--disputed)]">+{change.estimatedDays} estimated days</p>
         )}
       </div>
 
@@ -90,7 +90,7 @@ export default async function ScopeChangeDetailPage({ params }: Props) {
           <form action={accept} className="flex-1">
             <button
               type="submit"
-              className="w-full py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors"
+              className="w-full py-2 rounded-lg bg-[var(--success)] hover:brightness-110 text-white text-sm font-medium transition-colors"
             >
               Accept
             </button>
@@ -98,7 +98,7 @@ export default async function ScopeChangeDetailPage({ params }: Props) {
           <form action={reject} className="flex-1">
             <button
               type="submit"
-              className="w-full py-2 rounded-lg bg-red-900/40 hover:bg-red-900/60 text-red-400 text-sm font-medium transition-colors border border-red-900/40"
+              className="w-full py-2 rounded-lg bg-[var(--danger-muted)] hover:bg-[var(--danger)] hover:text-white text-[var(--danger)] text-sm font-medium transition-colors border border-[var(--danger)]/30"
             >
               Reject
             </button>
