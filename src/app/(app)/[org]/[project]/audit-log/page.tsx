@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { auditLogs, projects } from "@/db/schema";
+import { auditLogs } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import { Shield } from "@/components/icons";
 import { formatRelativeTime } from "@/lib/utils";
@@ -19,9 +20,9 @@ const entityTones: Record<string, ToneKey> = {
 };
 
 export default async function AuditLogPage({ params }: Props) {
-  const { project } = await params;
+  const { org, project } = await params;
 
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const logs = await db

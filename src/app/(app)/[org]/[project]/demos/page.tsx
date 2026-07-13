@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { db } from "@/db";
-import { demoVideos, projects, requirements } from "@/db/schema";
+import { demoVideos, requirements } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import { Video, Send } from "@/components/icons";
 import { formatDate } from "@/lib/utils";
@@ -29,7 +30,7 @@ export default async function DemosPage({ params, searchParams }: DemosPageProps
   const sParams = await searchParams;
   const selectedDemoId = typeof sParams.demo === "string" ? sParams.demo : undefined;
 
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const [demos, allReqs] = await Promise.all([

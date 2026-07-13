@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { scopeChanges, projects, auditLogs, users } from "@/db/schema";
+import { scopeChanges, auditLogs, users } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { GitBranch, Clock, CheckCircle2, AlertTriangle } from "@/components/icons";
@@ -32,7 +33,7 @@ export default async function ScopeChangesPage({ params, searchParams }: ScopeCh
   const sParams = await searchParams;
   const selectedChangeId = typeof sParams.scope_change === "string" ? sParams.scope_change : undefined;
 
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const changes = await db

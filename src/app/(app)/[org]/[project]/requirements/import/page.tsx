@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Layers } from "@/components/icons";
 import { importRequirementsWithAI } from "@/lib/actions/requirements";
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/dashboard-ui";
 import { ImportFormClient } from "./ImportFormClient";
@@ -14,7 +12,7 @@ interface Props {
 
 export default async function ImportRequirementsPage({ params }: Props) {
   const { org, project } = await params;
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const action = importRequirementsWithAI.bind(null, projectData.id, org, project);

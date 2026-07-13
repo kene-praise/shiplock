@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { tasks, projects } from "@/db/schema";
+import { tasks } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "@/components/icons";
@@ -14,7 +15,7 @@ interface Props {
 export default async function BlockersPage({ params }: Props) {
   const { org, project } = await params;
 
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const blocked = await db

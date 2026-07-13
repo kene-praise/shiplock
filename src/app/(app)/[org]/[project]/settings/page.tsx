@@ -1,6 +1,4 @@
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import { updateProject, archiveProject } from "@/lib/actions/projects";
 import { PageHeader, SectionLabel } from "@/components/dashboard-ui";
@@ -13,7 +11,7 @@ interface Props {
 export default async function ProjectSettingsPage({ params }: Props) {
   const { org, project } = await params;
 
-  const [proj] = await db.select().from(projects).where(eq(projects.slug, project)).limit(1);
+  const proj = await getProjectForOrg(org, project);
   if (!proj) notFound();
 
   const save    = updateProject.bind(null, proj.id, project, org);

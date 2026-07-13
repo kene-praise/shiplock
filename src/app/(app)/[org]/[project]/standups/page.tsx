@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { standups, projects } from "@/db/schema";
+import { standups } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import { BookOpen, AlertTriangle } from "@/components/icons";
 import { formatDate } from "@/lib/utils";
@@ -16,7 +17,7 @@ interface Props {
 export default async function StandupsPage({ params }: Props) {
   const { org, project } = await params;
 
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const history = await db

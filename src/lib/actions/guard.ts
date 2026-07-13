@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { organizations, users, projects } from "@/db/schema";
@@ -17,7 +18,7 @@ export type Member = {
 // Caller must be an owner/builder member of the org with this slug.
 export async function requireBuilder(orgSlug: string): Promise<Member> {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("Unauthorized");
+  if (!session?.user) redirect("/login");
 
   const [row] = await db
     .select({ user: users, orgId: organizations.id })

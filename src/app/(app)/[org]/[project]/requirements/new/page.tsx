@@ -2,9 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "@/components/icons";
 import { createRequirement } from "@/lib/actions/requirements";
 import { SubmitButton } from "@/components/submit-button";
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 
 interface Props {
@@ -13,7 +11,7 @@ interface Props {
 
 export default async function NewRequirementPage({ params }: Props) {
   const { org, project } = await params;
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
   const action = createRequirement.bind(null, projectData.id, org, project);
 

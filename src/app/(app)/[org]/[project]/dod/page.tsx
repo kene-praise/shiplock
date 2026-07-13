@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { dodItems, requirements, tasks, demoVideos, projects, auditLogs, users } from "@/db/schema";
+import { dodItems, requirements, tasks, demoVideos, auditLogs, users } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Circle, Video, CheckSquare, ClipboardCheck } from "@/components/icons";
@@ -50,7 +51,7 @@ export default async function DodPage({ params, searchParams }: Props) {
   const sParams = await searchParams;
   const selectedDodId = typeof sParams.edit_dod === "string" ? sParams.edit_dod : undefined;
 
-  const [projectData] = await db.select({ id: projects.id, name: projects.name }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   // Load all DoD items with their linked requirement, task, and demo

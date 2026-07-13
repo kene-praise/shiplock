@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { db } from "@/db";
-import { requirements, projects, tasks, dodItems, demoVideos, auditLogs, users } from "@/db/schema";
+import { requirements, tasks, dodItems, demoVideos, auditLogs, users } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import { FileCheck, CheckCircle2, Clock, AlertTriangle, Layers, Upload } from "@/components/icons";
 import { cumulativeDaily } from "@/lib/utils";
@@ -30,7 +31,7 @@ export default async function RequirementsPage({ params, searchParams }: Require
   const selectedDemoUrl = typeof sParams.demoUrl === "string" ? sParams.demoUrl : undefined;
   const selectedDemoTitle = typeof sParams.demoTitle === "string" ? sParams.demoTitle : undefined;
 
-  const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
+  const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
 
   const reqs = await db

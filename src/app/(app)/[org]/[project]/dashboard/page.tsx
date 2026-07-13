@@ -1,6 +1,7 @@
 import { db } from "@/db";
-import { projects, tasks, scopeChanges } from "@/db/schema";
+import { tasks, scopeChanges } from "@/db/schema";
 import { eq, and, count } from "drizzle-orm";
+import { getProjectForOrg } from "@/lib/project";
 import { AlertTriangle, CheckCircle2, GitBranch, TrendingUp } from "@/components/icons";
 import { formatRelativeTime, dailyCounts } from "@/lib/utils";
 import {
@@ -12,13 +13,9 @@ interface DashboardPageProps {
 }
 
 export default async function DashboardPage({ params }: DashboardPageProps) {
-  const { project } = await params;
+  const { org, project } = await params;
 
-  const [projectData] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.slug, project))
-    .limit(1);
+  const projectData = await getProjectForOrg(org, project);
 
   if (!projectData) {
     return <div className="p-6 text-muted-foreground text-sm">Project not found.</div>;
