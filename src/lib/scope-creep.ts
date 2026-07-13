@@ -1,6 +1,6 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
+import { callAI } from "@/lib/ai";
 
 export interface ScopeCreepResult {
   detected: boolean;
@@ -14,8 +14,6 @@ export async function detectScopeCreep(
   requirementDescription: string,
   rejectionComment: string
 ): Promise<ScopeCreepResult> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
   const prompt = `You are analyzing a client's rejection comment on a completed software requirement to detect scope creep.
 
 Original requirement:
@@ -35,17 +33,7 @@ Respond with JSON only, no other text:
   "summary": "One sentence explaining why this is scope creep (if detected, else null)"
 }`;
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const text = message.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("");
-
-  const parsed = JSON.parse(text) as ScopeCreepResult;
-  return parsed;
+  const text = await callAI(prompt);
+  const cleaned = text.replace(/```json\s*/i, "").replace(/```\s*$/, "").trim();
+  return JSON.parse(cleaned) as ScopeCreepResult;
 }
