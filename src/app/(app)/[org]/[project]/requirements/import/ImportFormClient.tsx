@@ -1,18 +1,21 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useActionState } from "react";
 import { SubmitButton } from "@/components/submit-button";
 import { Upload, Send } from "@/components/icons";
 import Link from "next/link";
+import type { ImportState } from "@/lib/actions/requirements.types";
 
 interface Props {
-  action: (formData: FormData) => Promise<void>;
+  action: (prevState: ImportState, formData: FormData) => Promise<ImportState>;
   cancelUrl: string;
 }
 
 export function ImportFormClient({ action, cancelUrl }: Props) {
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState("");
+  const [state, formAction] = useActionState(action, null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,8 +34,14 @@ export function ImportFormClient({ action, cancelUrl }: Props) {
   };
 
   return (
-    <form action={action} className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
+    <form action={formAction} className="bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] overflow-hidden animate-enter" style={{ "--stagger": 1 } as React.CSSProperties}>
       <div className="p-5 space-y-5">
+        {state?.error && (
+          <div className="rounded-[var(--radius-md)] border border-[var(--danger)] bg-[var(--danger-muted)] px-3.5 py-2.5 text-[12.5px] text-[var(--danger)]">
+            {state.error}
+          </div>
+        )}
+
         {/* Upload box */}
         <div 
           onClick={() => fileInputRef.current?.click()}

@@ -2,13 +2,19 @@
 
 import { db } from "@/db";
 import { requirements, clientPings, users, projects, auditLogs, tasks, demoVideos, clientReviews } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendRequirementReviewEmail } from "@/lib/email";
 import { requireBuilder, requireProjectInOrg } from "./guard";
-import { callAI } from "@/lib/ai";
+import { callAI, AIUnavailableError } from "@/lib/ai";
+import type { ImportState } from "./requirements.types";
+
+// AI import runs on a shared (free-tier) provider key, so cap how many times a
+// single user can trigger it per rolling 24h — one abusive loop shouldn't be
+// able to exhaust the daily quota for everyone.
+const MAX_IMPORTS_PER_DAY = 10;
 
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
@@ -175,13 +181,43 @@ export async function importRequirementsWithAI(
   projectId: string,
   org: string,
   project: string,
+  _prevState: ImportState,
   formData: FormData
-) {
+): Promise<ImportState> {
   const member = await requireBuilder(org);
   await requireProjectInOrg(projectId, member.orgId);
 
   const documentText = (formData.get("documentText") as string)?.trim();
-  if (!documentText) return;
+  if (!documentText) return { error: "Paste a document or upload a file to import." };
+
+  // Rate limit: count this user's imports in the last 24h before spending quota.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentImports = await db
+    .select({ id: auditLogs.id })
+    .from(auditLogs)
+    .where(
+      and(
+        eq(auditLogs.userId, member.user.id),
+        eq(auditLogs.action, "ai_import"),
+        gte(auditLogs.createdAt, since)
+      )
+    );
+  if (recentImports.length >= MAX_IMPORTS_PER_DAY) {
+    return {
+      error: `You've reached the daily limit of ${MAX_IMPORTS_PER_DAY} AI imports. Please try again later.`,
+    };
+  }
+
+  // Record the attempt up front — a request that reaches the provider counts
+  // against quota whether or not it ultimately succeeds.
+  await db.insert(auditLogs).values({
+    projectId,
+    userId: member.user.id,
+    action: "ai_import",
+    entityType: "ai_import",
+    entityId: crypto.randomUUID(),
+    metadata: { documentChars: documentText.length },
+  });
 
   const prompt = `You are an expert project manager and system architect.
 Analyze the following project documentation or text and extract clean, specific requirements and their associated implementation tasks.
@@ -217,7 +253,13 @@ Instructions:
   ]
 }`;
 
-  const aiResponse = await callAI(prompt);
+  let aiResponse: string;
+  try {
+    aiResponse = await callAI(prompt);
+  } catch (e) {
+    if (e instanceof AIUnavailableError) return { error: e.message };
+    throw e;
+  }
 
   // Clean JSON response (in case of markdown blocks)
   const cleaned = aiResponse.replace(/```json\s*/i, "").replace(/```\s*$/, "").trim();
@@ -239,11 +281,13 @@ Instructions:
   try {
     parsed = JSON.parse(cleaned) as ParsedImport;
   } catch {
-    throw new Error("The AI returned a response that couldn't be parsed. Try the import again.");
+    return { error: "The AI returned an unreadable response. Please try the import again." };
   }
   const parsedReqs = Array.isArray(parsed.requirements) ? parsed.requirements : [];
   const parsedTasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
-  if (parsedReqs.length === 0 && parsedTasks.length === 0) return;
+  if (parsedReqs.length === 0 && parsedTasks.length === 0) {
+    return { error: "The AI couldn't find any requirements or tasks in that text." };
+  }
 
   // 1. Insert requirements in one statement (neon-http has no transactions —
   // batching keeps a failure from leaving a half-written import)

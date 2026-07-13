@@ -1,5 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+// Thrown when every configured provider fails (or none is configured). Callers
+// should surface a friendly message — never the raw provider error, which can
+// leak billing/quota details.
+export class AIUnavailableError extends Error {
+  constructor() {
+    super("The AI service is temporarily unavailable. Please try again in a moment.");
+    this.name = "AIUnavailableError";
+  }
+}
+
 async function callGemini(apiKey: string, prompt: string): Promise<string> {
   const response = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
@@ -38,6 +48,8 @@ async function callAnthropic(apiKey: string, prompt: string): Promise<string> {
     .join("");
 }
 
+// Gemini is the primary provider (free tier). Anthropic only runs if
+// ANTHROPIC_API_KEY is set — it's an opt-in paid fallback, not required.
 export async function callAI(prompt: string): Promise<string> {
   const geminiKey = process.env.GEMINI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -47,7 +59,7 @@ export async function callAI(prompt: string): Promise<string> {
       return await callGemini(geminiKey, prompt);
     } catch (e) {
       console.error("Gemini API call failed:", e);
-      if (!anthropicKey) throw e;
+      if (!anthropicKey) throw new AIUnavailableError();
     }
   }
 
@@ -56,9 +68,9 @@ export async function callAI(prompt: string): Promise<string> {
       return await callAnthropic(anthropicKey, prompt);
     } catch (e) {
       console.error("Anthropic API call failed:", e);
-      throw e;
+      throw new AIUnavailableError();
     }
   }
 
-  throw new Error("No AI API key found. Please set GEMINI_API_KEY or ANTHROPIC_API_KEY in your .env.local file.");
+  throw new AIUnavailableError();
 }
