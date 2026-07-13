@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { dodItems, demoVideos } from "@/db/schema";
+import { dodItems, demoVideos, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireBuilder, requireProjectInOrg } from "./guard";
@@ -60,6 +60,50 @@ export async function linkVideotoDod(
     .update(dodItems)
     .set({ demoVideoId, updatedAt: new Date() })
     .where(eq(dodItems.id, dodItemId));
+
+  revalidatePath(`/${org}/${project}/dod`);
+}
+
+export async function updateDodItem(
+  id: string,
+  org: string,
+  project: string,
+  formData: FormData
+) {
+  const oldItem = await requireDodItem(id, org);
+  const member = await requireBuilder(org);
+
+  const criterion = (formData.get("criterion") as string)?.trim();
+  const metRaw = formData.get("met") as string;
+  const met = metRaw === "true";
+  const taskId = (formData.get("taskId") as string) || null;
+  const demoVideoId = (formData.get("demoVideoId") as string) || null;
+
+  if (!criterion) return;
+
+  const [newItem] = await db
+    .update(dodItems)
+    .set({
+      criterion,
+      met,
+      metAt: met ? (oldItem.met ? oldItem.metAt : new Date()) : null,
+      taskId,
+      demoVideoId,
+      updatedAt: new Date(),
+    })
+    .where(eq(dodItems.id, id))
+    .returning();
+
+  // Insert audit log
+  await db.insert(auditLogs).values({
+    projectId: oldItem.projectId,
+    userId: member.user.id,
+    action: "updated",
+    entityType: "dod",
+    entityId: id,
+    oldValue: oldItem,
+    newValue: newItem,
+  });
 
   revalidatePath(`/${org}/${project}/dod`);
 }

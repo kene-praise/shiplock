@@ -22,6 +22,7 @@ import {
   Message01Icon,
   MinusSignCircleIcon,
   Moon02Icon,
+  Logout01Icon,
   PauseIcon,
   PlayIcon,
   PlusSignIcon,
@@ -96,6 +97,7 @@ export const LayoutDashboard = make(DashboardSquare01Icon);
 export const Lock = make(SquareLock02Icon);
 export const MessageSquare = make(Message01Icon);
 export const Moon = make(Moon02Icon);
+export const LogOut = make(Logout01Icon);
 export const PauseCircle = make(PauseIcon);
 export const Play = make(PlayIcon);
 export const Plus = make(PlusSignIcon);

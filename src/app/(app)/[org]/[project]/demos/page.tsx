@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/db";
 import { demoVideos, projects, requirements } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
@@ -9,8 +10,11 @@ import { PageHeader, SecondaryLink } from "@/components/dashboard-ui";
 import { NewDemoDialog } from "@/components/dialogs/NewDemoDialog";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 
-interface Props {
+import { ViewDemoDialog } from "@/components/dialogs/ViewDemoDialog";
+
+interface DemosPageProps {
   params: Promise<{ org: string; project: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 const statusConfig: Record<string, { label: string; tone: StatusTone }> = {
@@ -20,8 +24,10 @@ const statusConfig: Record<string, { label: string; tone: StatusTone }> = {
   no_response: { label: "No Response",     tone: "neutral" },
 };
 
-export default async function DemosPage({ params }: Props) {
+export default async function DemosPage({ params, searchParams }: DemosPageProps) {
   const { org, project } = await params;
+  const sParams = await searchParams;
+  const selectedDemoId = typeof sParams.demo === "string" ? sParams.demo : undefined;
 
   const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
   if (!projectData) notFound();
@@ -43,6 +49,7 @@ export default async function DemosPage({ params }: Props) {
   ]);
 
   const pending = demos.filter((d) => d.demo.clientStatus === "pending" && d.demo.sentToClient).length;
+  const selectedDemo = selectedDemoId ? demos.find((d) => d.demo.id === selectedDemoId)?.demo : null;
   const todayISO = new Date().toISOString().split("T")[0];
 
   return (
@@ -89,14 +96,12 @@ export default async function DemosPage({ params }: Props) {
                       <Video className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
-                      <a
-                        href={demo.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        href={`/${org}/${project}/demos?demo=${demo.id}`}
                         className="text-[13px] font-medium text-[var(--fg)] hover:text-[var(--accent)] transition-colors truncate block"
                       >
                         {demo.title}
-                      </a>
+                      </Link>
                       <p className="text-[11.5px] text-[var(--fg-muted)] mt-0.5 tabular-nums">
                         Recorded {formatDate(demo.recordedAt)}
                         {demo.durationSeconds &&
@@ -153,6 +158,14 @@ export default async function DemosPage({ params }: Props) {
             );
           })}
         </div>
+      )}
+
+      {selectedDemo && (
+        <ViewDemoDialog
+          title={selectedDemo.title}
+          videoUrl={selectedDemo.videoUrl}
+          onCloseUrl={`/${org}/${project}/demos`}
+        />
       )}
     </div>
   );

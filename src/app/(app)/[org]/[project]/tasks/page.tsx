@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { tasks, projects, requirements } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { tasks, projects, requirements, auditLogs, users } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, TrendingUp, AlertTriangle, Clock } from "@/components/icons";
@@ -9,10 +9,12 @@ import {
   T, KpiCard, Badge, SectionLabel, PageHeader, LineChart, BarChart, type ToneKey,
 } from "@/components/dashboard-ui";
 import { NewTaskDialog } from "@/components/dialogs/NewTaskDialog";
-import { createTask } from "@/lib/actions/tasks";
+import { createTask, updateTask } from "@/lib/actions/tasks";
+import { ViewTaskDialog } from "@/components/dialogs/ViewTaskDialog";
 
-interface Props {
+interface TasksPageProps {
   params: Promise<{ org: string; project: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 const pTone: Record<string, ToneKey> = {
@@ -22,8 +24,10 @@ const pLabel: Record<string, string> = {
   p0_critical: "P0", p1_high: "P1", p2_medium: "P2", p3_low: "P3",
 };
 
-export default async function TasksPage({ params }: Props) {
+export default async function TasksPage({ params, searchParams }: TasksPageProps) {
   const { org, project } = await params;
+  const sParams = await searchParams;
+  const selectedTaskId = typeof sParams.task === "string" ? sParams.task : undefined;
 
   const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
   if (!projectData) notFound();
@@ -36,6 +40,32 @@ export default async function TasksPage({ params }: Props) {
     db.select({ id: requirements.id, refCode: requirements.refCode, title: requirements.title })
       .from(requirements).where(eq(requirements.projectId, projectData.id)),
   ]);
+
+  let selectedTaskData = null;
+  if (selectedTaskId) {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, selectedTaskId)).limit(1);
+    if (task) {
+      const [req, taskHistory] = await Promise.all([
+        task.requirementId
+          ? db.select().from(requirements).where(eq(requirements.id, task.requirementId)).limit(1)
+          : Promise.resolve([undefined]),
+        db
+          .select({
+            id: auditLogs.id,
+            action: auditLogs.action,
+            oldValue: auditLogs.oldValue,
+            newValue: auditLogs.newValue,
+            createdAt: auditLogs.createdAt,
+            user: { name: users.name },
+          })
+          .from(auditLogs)
+          .leftJoin(users, eq(auditLogs.userId, users.id))
+          .where(and(eq(auditLogs.entityId, selectedTaskId), eq(auditLogs.entityType, "task")))
+          .orderBy(desc(auditLogs.createdAt)),
+      ]);
+      selectedTaskData = { task, req: req[0], taskHistory };
+    }
+  }
 
   const total = taskList.length;
   const done = taskList.filter((t) => t.status === "done");
@@ -133,7 +163,7 @@ export default async function TasksPage({ params }: Props) {
                     col.tasks.map((task) => (
                       <Link
                         key={task.id}
-                        href={`/${org}/${project}/tasks/${task.id}`}
+                        href={`/${org}/${project}/tasks?task=${task.id}`}
                         className="block p-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-subtle)] hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-150"
                       >
                         <div className="flex items-center gap-1.5 mb-1.5">
@@ -153,6 +183,19 @@ export default async function TasksPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {selectedTaskData && (
+        <ViewTaskDialog
+          org={org}
+          project={project}
+          task={selectedTaskData.task}
+          req={selectedTaskData.req}
+          onCloseUrl={`/${org}/${project}/tasks`}
+          updateAction={updateTask.bind(null, selectedTaskData.task.id, org, project)}
+          history={selectedTaskData.taskHistory as { id: string; action: string; oldValue: Record<string, unknown> | null; newValue: Record<string, unknown> | null; createdAt: Date; user: { name: string } | null }[]}
+          reqs={reqList}
+        />
+      )}
     </div>
   );
 }

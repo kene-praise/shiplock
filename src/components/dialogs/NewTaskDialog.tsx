@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { AppDialog, DialogBody, DialogFooter } from "@/components/ui/app-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import { Plus } from "@/components/icons";
@@ -10,6 +11,22 @@ interface Req { id: string; refCode: string; title: string; }
 interface Props {
   action: (formData: FormData) => Promise<void>;
   reqs: Req[];
+}
+
+function FormWatcher({ onSuccess }: { onSuccess: () => void }) {
+  const { pending } = useFormStatus();
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (pending) {
+      wasPending.current = true;
+    } else if (wasPending.current && !pending) {
+      wasPending.current = false;
+      onSuccess();
+    }
+  }, [pending, onSuccess]);
+
+  return null;
 }
 
 export function NewTaskDialog({ action, reqs }: Props) {
@@ -23,6 +40,7 @@ export function NewTaskDialog({ action, reqs }: Props) {
 
       <AppDialog open={open} onClose={() => setOpen(false)} title="New Task" description="A ref code will be assigned automatically.">
         <form action={action} className="flex flex-col min-h-0">
+          <FormWatcher onSuccess={() => setOpen(false)} />
           <DialogBody className="space-y-4">
             <div className="space-y-1.5">
               <label className="field-label block">Title</label>

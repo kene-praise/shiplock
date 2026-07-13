@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { tasks } from "@/db/schema";
+import { tasks, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -52,4 +52,64 @@ export async function createTask(
 
   revalidatePath(`/${org}/${project}/tasks`);
   redirect(`/${org}/${project}/tasks`);
+}
+
+export async function updateTask(
+  id: string,
+  org: string,
+  project: string,
+  formData: FormData
+) {
+  const member = await requireBuilder(org);
+
+  const [oldTask] = await db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.id, id))
+    .limit(1);
+
+  if (!oldTask) throw new Error("Not found");
+  await requireProjectInOrg(oldTask.projectId, member.orgId);
+
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim() || null;
+  const status = formData.get("status") as string;
+  const priority = formData.get("priority") as string;
+  const week = (formData.get("week") as string)?.trim() || null;
+  const blockedBy = (formData.get("blockedBy") as string)?.trim() || null;
+  const blockedReason = (formData.get("blockedReason") as string)?.trim() || null;
+  const dodRef = (formData.get("dodRef") as string)?.trim() || null;
+  const requirementId = (formData.get("requirementId") as string) || null;
+
+  if (!title) return;
+
+  const [newTask] = await db
+    .update(tasks)
+    .set({
+      title,
+      description,
+      status: status as "not_started" | "in_progress" | "blocked" | "done" | "cut",
+      priority: priority as "p0_critical" | "p1_high" | "p2_medium" | "p3_low",
+      week,
+      blockedBy,
+      blockedReason,
+      dodRef,
+      requirementId: requirementId || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, id))
+    .returning();
+
+  // Insert audit log
+  await db.insert(auditLogs).values({
+    projectId: oldTask.projectId,
+    userId: member.user.id,
+    action: "updated",
+    entityType: "task",
+    entityId: id,
+    oldValue: oldTask,
+    newValue: newTask,
+  });
+
+  revalidatePath(`/${org}/${project}/tasks`);
 }

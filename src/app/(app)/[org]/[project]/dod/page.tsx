@@ -1,16 +1,18 @@
 import { db } from "@/db";
-import { dodItems, requirements, tasks, demoVideos, projects } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { dodItems, requirements, tasks, demoVideos, projects, auditLogs, users } from "@/db/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Circle, Video, CheckSquare, ClipboardCheck } from "@/components/icons";
-import { markDodMet, markDodUnmet, linkVideotoDod } from "@/lib/actions/dod";
+import { markDodMet, markDodUnmet, linkVideotoDod, updateDodItem } from "@/lib/actions/dod";
 import { cn } from "@/lib/utils";
 import { PageHeader, SecondaryLink } from "@/components/dashboard-ui";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
+import { EditDodDialog } from "@/components/dialogs/EditDodDialog";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 const taskStatusTone: Record<string, StatusTone> = {
@@ -43,8 +45,10 @@ const demoStatusLabel: Record<string, string> = {
   no_response: "No Response",
 };
 
-export default async function DodPage({ params }: Props) {
+export default async function DodPage({ params, searchParams }: Props) {
   const { org, project } = await params;
+  const sParams = await searchParams;
+  const selectedDodId = typeof sParams.edit_dod === "string" ? sParams.edit_dod : undefined;
 
   const [projectData] = await db.select({ id: projects.id, name: projects.name }).from(projects).where(eq(projects.slug, project)).limit(1);
   if (!projectData) notFound();
@@ -70,6 +74,33 @@ export default async function DodPage({ params }: Props) {
     .from(demoVideos)
     .where(eq(demoVideos.projectId, projectData.id))
     .orderBy(desc(demoVideos.recordedAt));
+
+  const taskList = await db
+    .select({ id: tasks.id, refCode: tasks.refCode, title: tasks.title })
+    .from(tasks)
+    .where(eq(tasks.projectId, projectData.id))
+    .orderBy(tasks.refCode);
+
+  let selectedDodData = null;
+  if (selectedDodId) {
+    const [dod] = await db.select().from(dodItems).where(eq(dodItems.id, selectedDodId)).limit(1);
+    if (dod) {
+      const dodHistory = await db
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          oldValue: auditLogs.oldValue,
+          newValue: auditLogs.newValue,
+          createdAt: auditLogs.createdAt,
+          user: { name: users.name },
+        })
+        .from(auditLogs)
+        .leftJoin(users, eq(auditLogs.userId, users.id))
+        .where(and(eq(auditLogs.entityId, selectedDodId), eq(auditLogs.entityType, "dod")))
+        .orderBy(desc(auditLogs.createdAt));
+      selectedDodData = { dod, dodHistory };
+    }
+  }
 
   // Group by requirement
   const grouped = new Map<string, { req: typeof items[0]["req"]; items: typeof items }>();
@@ -162,8 +193,11 @@ export default async function DodPage({ params }: Props) {
                             </button>
                           </form>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
+                            <div className="flex items-center justify-between mb-0.5">
                               <span className="text-[10px] font-mono font-medium text-[var(--fg-muted)]">{dod.dodRef}</span>
+                              <Link href={`/${org}/${project}/dod?edit_dod=${dod.id}`} className="text-[11.5px] text-[var(--accent)] hover:underline">
+                                Edit
+                              </Link>
                             </div>
                             <p className={cn("text-[13px]", dod.met ? "text-[var(--fg-muted)] line-through" : "text-[var(--fg)]")}>
                               {dod.criterion}
@@ -175,7 +209,7 @@ export default async function DodPage({ params }: Props) {
                         <div className="flex items-center gap-3 ml-7 flex-wrap">
                           {task ? (
                             <Link
-                              href={`/${org}/${project}/tasks/${task.id}`}
+                              href={`/${org}/${project}/tasks?task=${task.id}`}
                               className="flex items-center gap-1.5 text-[12px] transition-colors group"
                             >
                               <CheckSquare className="h-3.5 w-3.5 text-[var(--fg-muted)] group-hover:text-[var(--fg)]" />
@@ -234,6 +268,17 @@ export default async function DodPage({ params }: Props) {
             );
           })}
         </div>
+      )}
+
+      {selectedDodData && (
+        <EditDodDialog
+          dod={selectedDodData.dod}
+          tasks={taskList}
+          demos={allDemos}
+          onCloseUrl={`/${org}/${project}/dod`}
+          updateAction={updateDodItem.bind(null, selectedDodData.dod.id, org, project)}
+          history={selectedDodData.dodHistory as { id: string; action: string; oldValue: Record<string, unknown> | null; newValue: Record<string, unknown> | null; createdAt: Date; user: { name: string } | null }[]}
+        />
       )}
     </div>
   );

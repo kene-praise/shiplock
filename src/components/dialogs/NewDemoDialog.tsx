@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { AppDialog, DialogBody, DialogFooter } from "@/components/ui/app-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import { Plus } from "@/components/icons";
@@ -11,6 +12,22 @@ interface Props {
   action: (formData: FormData) => Promise<void>;
   reqs: Req[];
   todayISO: string;
+}
+
+function FormWatcher({ onSuccess }: { onSuccess: () => void }) {
+  const { pending } = useFormStatus();
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (pending) {
+      wasPending.current = true;
+    } else if (wasPending.current && !pending) {
+      wasPending.current = false;
+      onSuccess();
+    }
+  }, [pending, onSuccess]);
+
+  return null;
 }
 
 export function NewDemoDialog({ action, reqs, todayISO }: Props) {
@@ -24,6 +41,7 @@ export function NewDemoDialog({ action, reqs, todayISO }: Props) {
 
       <AppDialog open={open} onClose={() => setOpen(false)} title="Add Demo Video" description="Paste a video URL and link it to the feature it demonstrates.">
         <form action={action} className="flex flex-col min-h-0">
+          <FormWatcher onSuccess={() => setOpen(false)} />
           <DialogBody className="space-y-4">
             <div className="space-y-1.5">
               <label className="field-label block">Title</label>

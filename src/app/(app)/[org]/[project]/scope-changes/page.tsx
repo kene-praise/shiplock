@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { scopeChanges, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { scopeChanges, projects, auditLogs, users } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { GitBranch, Clock, CheckCircle2, AlertTriangle } from "@/components/icons";
@@ -9,10 +9,12 @@ import {
   T, KpiCard, Badge, SectionLabel, PageHeader, BarChart, type ToneKey,
 } from "@/components/dashboard-ui";
 import { NewScopeChangeDialog } from "@/components/dialogs/NewScopeChangeDialog";
-import { createScopeChange } from "@/lib/actions/scope-changes";
+import { createScopeChange, updateScopeChange, updateScopeChangeStatus } from "@/lib/actions/scope-changes";
+import { ViewScopeChangeDialog } from "@/components/dialogs/ViewScopeChangeDialog";
 
-interface Props {
+interface ScopeChangesPageProps {
   params: Promise<{ org: string; project: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 const stTone: Record<string, ToneKey> = {
@@ -25,8 +27,10 @@ function impactFromDays(days: number | null): { label: string; tone: ToneKey } {
   return { label: "low impact", tone: "green" };
 }
 
-export default async function ScopeChangesPage({ params }: Props) {
+export default async function ScopeChangesPage({ params, searchParams }: ScopeChangesPageProps) {
   const { org, project } = await params;
+  const sParams = await searchParams;
+  const selectedChangeId = typeof sParams.scope_change === "string" ? sParams.scope_change : undefined;
 
   const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
   if (!projectData) notFound();
@@ -36,6 +40,27 @@ export default async function ScopeChangesPage({ params }: Props) {
     .from(scopeChanges)
     .where(eq(scopeChanges.projectId, projectData.id))
     .orderBy(scopeChanges.createdAt);
+
+  let selectedChangeData = null;
+  if (selectedChangeId) {
+    const [change] = await db.select().from(scopeChanges).where(eq(scopeChanges.id, selectedChangeId)).limit(1);
+    if (change) {
+      const changeHistory = await db
+        .select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          oldValue: auditLogs.oldValue,
+          newValue: auditLogs.newValue,
+          createdAt: auditLogs.createdAt,
+          user: { name: users.name },
+        })
+        .from(auditLogs)
+        .leftJoin(users, eq(auditLogs.userId, users.id))
+        .where(and(eq(auditLogs.entityId, selectedChangeId), eq(auditLogs.entityType, "scope_change")))
+        .orderBy(desc(auditLogs.createdAt));
+      selectedChangeData = { change, changeHistory };
+    }
+  }
 
   const total = changes.length;
   const counts = {
@@ -117,7 +142,7 @@ export default async function ScopeChangesPage({ params }: Props) {
                 return (
                   <Link
                     key={ch.id}
-                    href={`/${org}/${project}/scope-changes/${ch.id}`}
+                    href={`/${org}/${project}/scope-changes?scope_change=${ch.id}`}
                     className="block bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-lg)] p-4 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-150"
                   >
                     <div className="flex items-start justify-between gap-3 mb-2">
@@ -140,6 +165,19 @@ export default async function ScopeChangesPage({ params }: Props) {
             </div>
           </div>
         </>
+      )}
+
+      {selectedChangeData && (
+        <ViewScopeChangeDialog
+          change={selectedChangeData.change}
+          onCloseUrl={`/${org}/${project}/scope-changes`}
+          updateAction={updateScopeChange.bind(null, selectedChangeData.change.id, org, project)}
+          statusAction={async (status) => {
+            "use server";
+            await updateScopeChangeStatus(selectedChangeData.change.id, status, org, project);
+          }}
+          history={selectedChangeData.changeHistory as { id: string; action: string; oldValue: Record<string, unknown> | null; newValue: Record<string, unknown> | null; createdAt: Date; user: { name: string } | null }[]}
+        />
       )}
     </div>
   );

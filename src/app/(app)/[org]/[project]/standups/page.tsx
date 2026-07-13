@@ -2,10 +2,12 @@ import { db } from "@/db";
 import { standups, projects } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { BookOpen, Plus, AlertTriangle } from "@/components/icons";
+import { BookOpen, AlertTriangle } from "@/components/icons";
 import { formatDate } from "@/lib/utils";
-import { PageHeader, CtaLink, SectionLabel } from "@/components/dashboard-ui";
+import { PageHeader, SectionLabel } from "@/components/dashboard-ui";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { NewStandupDialog } from "@/components/dialogs/NewStandupDialog";
+import { createStandup } from "@/lib/actions/standups";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
@@ -23,12 +25,19 @@ export default async function StandupsPage({ params }: Props) {
     .where(eq(standups.projectId, projectData.id))
     .orderBy(desc(standups.date));
 
+  const todayFormatted = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="min-h-full w-full max-w-[1100px] mx-auto px-8 py-6 flex flex-col gap-4">
       <PageHeader title="Standups" meta={`${history.length} entries`}>
-        <CtaLink href={`/${org}/${project}/standups/today`}>
-          <Plus className="h-3.5 w-3.5" /> Today&apos;s Standup
-        </CtaLink>
+        <NewStandupDialog
+          action={createStandup.bind(null, projectData.id, org, project)}
+          todayFormatted={todayFormatted}
+        />
       </PageHeader>
 
       {history.length === 0 ? (

@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendRequirementReviewEmail } from "@/lib/email";
 import { requireBuilder, requireProjectInOrg } from "./guard";
+import { callAI } from "@/lib/ai";
 
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
@@ -168,4 +169,190 @@ export async function deleteRequirement(
 
   revalidatePath(`/${org}/${project}/requirements`);
   redirect(`/${org}/${project}/requirements`);
+}
+
+export async function importRequirementsWithAI(
+  projectId: string,
+  org: string,
+  project: string,
+  formData: FormData
+) {
+  const member = await requireBuilder(org);
+  await requireProjectInOrg(projectId, member.orgId);
+
+  const documentText = (formData.get("documentText") as string)?.trim();
+  if (!documentText) return;
+
+  const prompt = `You are an expert project manager and system architect.
+Analyze the following project documentation or text and extract clean, specific requirements and their associated implementation tasks.
+
+Project document:
+"""
+${documentText}
+"""
+
+Instructions:
+1. Extract requirements that need client approval and tasks that builders need to complete.
+2. Group tasks under their respective requirements by referencing a temporary "refId" (e.g. "REQ_1", "REQ_2"). If a task doesn't map to a specific requirement, do not link it.
+3. Classification of requirements should be one of: "mvp", "post_mvp", "out_of_scope".
+4. Source of requirements should be "document".
+5. Priority of tasks should be one of: "p0_critical", "p1_high", "p2_medium", "p3_low".
+6. Respond with JSON only, matching this schema:
+{
+  "requirements": [
+    {
+      "refId": "REQ_1",
+      "title": "Short title",
+      "description": "Full details of the requirement",
+      "classification": "mvp"
+    }
+  ],
+  "tasks": [
+    {
+      "reqRefId": "REQ_1",
+      "title": "Task title",
+      "description": "Optional task details",
+      "priority": "p2_medium"
+    }
+  ]
+}`;
+
+  const aiResponse = await callAI(prompt);
+  
+  // Clean JSON response (in case of markdown blocks)
+  const cleaned = aiResponse.replace(/```json\s*/i, "").replace(/```\s*$/, "").trim();
+  const parsed = JSON.parse(cleaned) as {
+    requirements: {
+      refId: string;
+      title: string;
+      description: string;
+      classification: string;
+    }[];
+    tasks: {
+      reqRefId: string | null;
+      title: string;
+      description: string | null;
+      priority: string;
+    }[];
+  };
+
+  // 1. Insert requirements
+  const reqIdMap = new Map<string, string>(); // temp refId -> db UUID
+  
+  // Get starting REQ number
+  const existingReqs = await db
+    .select({ refCode: requirements.refCode })
+    .from(requirements)
+    .where(eq(requirements.projectId, projectId));
+  let maxReqNum = existingReqs.reduce((m, r) => {
+    const n = parseInt(r.refCode.replace("REQ-", ""), 10);
+    return isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+
+  for (const r of parsed.requirements) {
+    maxReqNum += 1;
+    const refCode = `REQ-${String(maxReqNum).padStart(3, "0")}`;
+    const [inserted] = await db
+      .insert(requirements)
+      .values({
+        projectId,
+        refCode,
+        title: r.title,
+        description: r.description,
+        source: "document",
+        classification: (r.classification || "mvp") as "mvp" | "post_mvp" | "out_of_scope",
+        status: "draft",
+      })
+      .returning({ id: requirements.id });
+    
+    if (inserted) {
+      reqIdMap.set(r.refId, inserted.id);
+    }
+  }
+
+  // 2. Insert tasks
+  // Get starting task number
+  const existingTasks = await db
+    .select({ refCode: tasks.refCode })
+    .from(tasks)
+    .where(eq(tasks.projectId, projectId));
+  let maxTaskNum = existingTasks.reduce((m, t) => {
+    const n = parseInt(t.refCode.replace("T-", ""), 10);
+    return isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+
+  for (const t of parsed.tasks) {
+    maxTaskNum += 1;
+    const refCode = `T-${String(maxTaskNum).padStart(3, "0")}`;
+    const linkedReqId = t.reqRefId ? reqIdMap.get(t.reqRefId) : null;
+    
+    await db.insert(tasks).values({
+      projectId,
+      refCode,
+      title: t.title,
+      description: t.description || null,
+      ownerId: member.user.id,
+      priority: (t.priority || "p2_medium") as "p0_critical" | "p1_high" | "p2_medium" | "p3_low",
+      status: "not_started",
+      requirementId: linkedReqId || null,
+    });
+  }
+
+  revalidatePath(`/${org}/${project}/requirements`);
+  revalidatePath(`/${org}/${project}/tasks`);
+  redirect(`/${org}/${project}/requirements`);
+}
+
+export async function updateRequirement(
+  id: string,
+  org: string,
+  project: string,
+  formData: FormData
+) {
+  const member = await requireBuilder(org);
+  
+  const [oldReq] = await db
+    .select()
+    .from(requirements)
+    .where(eq(requirements.id, id))
+    .limit(1);
+  
+  if (!oldReq) throw new Error("Not found");
+  await requireProjectInOrg(oldReq.projectId, member.orgId);
+
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim();
+  const classification = formData.get("classification") as string;
+  const source = formData.get("source") as string;
+  const sourceDetail = (formData.get("sourceDetail") as string)?.trim() || null;
+  const status = formData.get("status") as string;
+
+  if (!title || !description) return;
+
+  const [newReq] = await db
+    .update(requirements)
+    .set({
+      title,
+      description,
+      classification: classification as "mvp" | "post_mvp" | "out_of_scope",
+      source: source as "document" | "meeting" | "email" | "verbal",
+      sourceDetail,
+      status: status as "draft" | "pending_approval" | "approved" | "disputed",
+      updatedAt: new Date(),
+    })
+    .where(eq(requirements.id, id))
+    .returning();
+
+  // Insert audit log
+  await db.insert(auditLogs).values({
+    projectId: oldReq.projectId,
+    userId: member.user.id,
+    action: "updated",
+    entityType: "requirement",
+    entityId: id,
+    oldValue: oldReq,
+    newValue: newReq,
+  });
+
+  revalidatePath(`/${org}/${project}/requirements`);
 }

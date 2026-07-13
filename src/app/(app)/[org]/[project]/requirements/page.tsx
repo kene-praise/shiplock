@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/db";
-import { requirements, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { requirements, projects, tasks, dodItems, demoVideos, auditLogs, users } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { FileCheck, CheckCircle2, Clock, AlertTriangle, Layers, Upload } from "@/components/icons";
 import { cumulativeDaily } from "@/lib/utils";
@@ -9,10 +9,13 @@ import {
   T, KpiCard, Badge, SectionLabel, PageHeader, SecondaryLink, LineChart, type ToneKey,
 } from "@/components/dashboard-ui";
 import { NewRequirementDialog } from "@/components/dialogs/NewRequirementDialog";
-import { createRequirement } from "@/lib/actions/requirements";
+import { createRequirement, deleteRequirement, sendRequirementForReview, updateRequirement } from "@/lib/actions/requirements";
+import { ViewRequirementDialog } from "@/components/dialogs/ViewRequirementDialog";
+import { ViewDemoDialog } from "@/components/dialogs/ViewDemoDialog";
 
 interface RequirementsPageProps {
   params: Promise<{ org: string; project: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 const clsTone: Record<string, ToneKey> = { mvp: "blue", post_mvp: "gray", out_of_scope: "red" };
@@ -20,8 +23,12 @@ const clsLabel: Record<string, string> = { mvp: "MVP", post_mvp: "Post-MVP", out
 const stTone: Record<string, ToneKey> = { draft: "gray", pending_approval: "amber", approved: "green", disputed: "red" };
 const stLabel: Record<string, string> = { draft: "Draft", pending_approval: "Pending", approved: "Approved", disputed: "Disputed" };
 
-export default async function RequirementsPage({ params }: RequirementsPageProps) {
+export default async function RequirementsPage({ params, searchParams }: RequirementsPageProps) {
   const { org, project } = await params;
+  const sParams = await searchParams;
+  const selectedReqId = typeof sParams.requirement === "string" ? sParams.requirement : undefined;
+  const selectedDemoUrl = typeof sParams.demoUrl === "string" ? sParams.demoUrl : undefined;
+  const selectedDemoTitle = typeof sParams.demoTitle === "string" ? sParams.demoTitle : undefined;
 
   const [projectData] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, project)).limit(1);
   if (!projectData) notFound();
@@ -31,6 +38,48 @@ export default async function RequirementsPage({ params }: RequirementsPageProps
     .from(requirements)
     .where(eq(requirements.projectId, projectData.id))
     .orderBy(requirements.refCode);
+
+  let selectedReqData = null;
+  if (selectedReqId) {
+    const [req] = await db
+      .select()
+      .from(requirements)
+      .where(eq(requirements.id, selectedReqId))
+      .limit(1);
+    if (req) {
+      const [reqTasks, reqDodItems, reqDemos, reqHistory] = await Promise.all([
+        db.select().from(tasks).where(eq(tasks.requirementId, selectedReqId)),
+        db
+          .select({
+            dod: dodItems,
+            task: { id: tasks.id, refCode: tasks.refCode, title: tasks.title, status: tasks.status },
+            demo: { id: demoVideos.id, title: demoVideos.title, videoUrl: demoVideos.videoUrl },
+          })
+          .from(dodItems)
+          .leftJoin(tasks, eq(dodItems.taskId, tasks.id))
+          .leftJoin(demoVideos, eq(dodItems.demoVideoId, demoVideos.id))
+          .where(eq(dodItems.requirementId, selectedReqId)),
+        db
+          .select({ id: demoVideos.id, title: demoVideos.title, videoUrl: demoVideos.videoUrl, clientStatus: demoVideos.clientStatus })
+          .from(demoVideos)
+          .where(eq(demoVideos.requirementId, selectedReqId)),
+        db
+          .select({
+            id: auditLogs.id,
+            action: auditLogs.action,
+            oldValue: auditLogs.oldValue,
+            newValue: auditLogs.newValue,
+            createdAt: auditLogs.createdAt,
+            user: { name: users.name },
+          })
+          .from(auditLogs)
+          .leftJoin(users, eq(auditLogs.userId, users.id))
+          .where(and(eq(auditLogs.entityId, selectedReqId), eq(auditLogs.entityType, "requirement")))
+          .orderBy(desc(auditLogs.createdAt)),
+      ]);
+      selectedReqData = { req, reqTasks, reqDodItems, reqDemos, reqHistory };
+    }
+  }
 
   const total = reqs.length;
   const counts = {
@@ -129,12 +178,12 @@ export default async function RequirementsPage({ params }: RequirementsPageProps
                   {reqs.map((req) => (
                     <tr key={req.id} className="hover:bg-[var(--bg-subtle)] transition-colors">
                       <td className="px-4 py-3">
-                        <Link href={`/${org}/${project}/requirements/${req.id}`}>
+                        <Link href={`/${org}/${project}/requirements?requirement=${req.id}`}>
                           <span className="ref-code">{req.refCode}</span>
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-[12.5px] font-medium text-[var(--fg)]">
-                        <Link href={`/${org}/${project}/requirements/${req.id}`} className="hover:text-[var(--accent)] transition-colors">
+                        <Link href={`/${org}/${project}/requirements?requirement=${req.id}`} className="hover:text-[var(--accent)] transition-colors">
                           {req.title}
                         </Link>
                       </td>
@@ -154,6 +203,30 @@ export default async function RequirementsPage({ params }: RequirementsPageProps
             </div>
           </div>
         </>
+      )}
+
+      {selectedReqData && (
+        <ViewRequirementDialog
+          org={org}
+          project={project}
+          req={selectedReqData.req}
+          reqTasks={selectedReqData.reqTasks}
+          reqDodItems={selectedReqData.reqDodItems}
+          reqDemos={selectedReqData.reqDemos}
+          onCloseUrl={`/${org}/${project}/requirements`}
+          deleteAction={deleteRequirement.bind(null, selectedReqData.req.id, org, project)}
+          reviewAction={sendRequirementForReview.bind(null, selectedReqData.req.id, org, project)}
+          updateAction={updateRequirement.bind(null, selectedReqData.req.id, org, project)}
+          history={selectedReqData.reqHistory as { id: string; action: string; oldValue: Record<string, unknown> | null; newValue: Record<string, unknown> | null; createdAt: Date; user: { name: string } | null }[]}
+        />
+      )}
+
+      {selectedDemoUrl && (
+        <ViewDemoDialog
+          title={selectedDemoTitle ?? "Demo Video"}
+          videoUrl={selectedDemoUrl}
+          onCloseUrl={`/${org}/${project}/requirements${selectedReqId ? `?requirement=${selectedReqId}` : ""}`}
+        />
       )}
     </div>
   );

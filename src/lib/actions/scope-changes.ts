@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { scopeChanges } from "@/db/schema";
+import { scopeChanges, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -68,4 +68,61 @@ export async function updateScopeChangeStatus(
 
   revalidatePath(`/${org}/${project}/scope-changes`);
   redirect(`/${org}/${project}/scope-changes/${id}`);
+}
+
+export async function updateScopeChange(
+  id: string,
+  org: string,
+  project: string,
+  formData: FormData
+) {
+  const member = await requireBuilder(org);
+
+  const [oldChange] = await db
+    .select()
+    .from(scopeChanges)
+    .where(eq(scopeChanges.id, id))
+    .limit(1);
+
+  if (!oldChange) throw new Error("Not found");
+  await requireProjectInOrg(oldChange.projectId, member.orgId);
+
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim();
+  const source = formData.get("source") as string;
+  const sourceDetail = (formData.get("sourceDetail") as string)?.trim() || null;
+  const impactDescription = (formData.get("impactDescription") as string)?.trim();
+  const estimatedDaysRaw = formData.get("estimatedDays") as string;
+  const estimatedDays = estimatedDaysRaw ? parseInt(estimatedDaysRaw, 10) : null;
+  const status = formData.get("status") as string;
+
+  if (!title || !description || !impactDescription) return;
+
+  const [newChange] = await db
+    .update(scopeChanges)
+    .set({
+      title,
+      description,
+      source: source as "client_request" | "meeting" | "internal",
+      sourceDetail,
+      impactDescription,
+      estimatedDays,
+      status: status as "pending" | "accepted" | "rejected" | "deferred",
+      updatedAt: new Date(),
+    })
+    .where(eq(scopeChanges.id, id))
+    .returning();
+
+  // Insert audit log
+  await db.insert(auditLogs).values({
+    projectId: oldChange.projectId,
+    userId: member.user.id,
+    action: "updated",
+    entityType: "scope_change",
+    entityId: id,
+    oldValue: oldChange,
+    newValue: newChange,
+  });
+
+  revalidatePath(`/${org}/${project}/scope-changes`);
 }

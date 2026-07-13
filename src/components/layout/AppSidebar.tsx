@@ -16,10 +16,12 @@ import {
   AlertTriangle,
   ClipboardCheck,
   CheckCircle2,
+  LogOut,
   type Icon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { signOut } from "@/lib/auth-client";
 
 interface NavItem {
   href: string;
@@ -244,6 +246,7 @@ function ProjectSwitcher({
 export function AppSidebar({ org, project, projectName, orgName, allProjects = [] }: AppSidebarProps) {
   const pathname = usePathname();
   const base = project ? `/${org}/${project}` : null;
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const sections: { label: string | null; items: NavItem[] }[] = base ? [
     {
@@ -366,6 +369,34 @@ export function AppSidebar({ org, project, projectName, orgName, allProjects = [
             <Users size={15} className="shrink-0 text-[var(--fg-muted)]" />
             <span>Team &amp; Org</span>
           </Link>
+          <button
+            onClick={async () => {
+              if (isLoggingOut) return;
+              setIsLoggingOut(true);
+              try {
+                await signOut({
+                  fetchOptions: {
+                    onSuccess: () => {
+                      window.location.href = "/login";
+                    },
+                    onError: (ctx) => {
+                      console.error("Sign out failed:", ctx.error);
+                      // Force redirect to login even on server-side failure
+                      window.location.href = "/login";
+                    },
+                  },
+                });
+              } catch (err) {
+                console.error("Sign out exception:", err);
+                window.location.href = "/login";
+              }
+            }}
+            disabled={isLoggingOut}
+            className="flex items-center gap-2 h-8 px-2.5 rounded-[var(--radius-sm)] text-[13px] leading-none text-[var(--danger)] hover:bg-[var(--danger-muted)] hover:text-[var(--danger)] transition-colors duration-100 w-full text-left disabled:opacity-50 disabled:cursor-wait"
+          >
+            <LogOut size={15} className={`shrink-0 ${isLoggingOut ? "animate-spin opacity-50" : ""}`} />
+            <span>{isLoggingOut ? "Logging out…" : "Log out"}</span>
+          </button>
         </div>
       </div>
     </div>
