@@ -106,6 +106,43 @@ export async function sendDemoReviewEmail({
   });
 }
 
+export async function sendInviteEmail({
+  to,
+  orgName,
+  roleLabel,
+  inviteUrl,
+  expiresInDays,
+}: {
+  to: string;
+  orgName: string;
+  roleLabel: string;
+  inviteUrl: string;
+  expiresInDays: number;
+}) {
+  await sendEmailPayload({
+    from: FROM,
+    to,
+    subject: `You're invited to ${orgName} on ShipLock`,
+    html: `
+      <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#09090b;background:#fff">
+        <div style="margin-bottom:24px">
+          <span style="font-weight:700;font-size:14px;letter-spacing:-0.02em">ShipLock</span>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px">You're invited</h1>
+        <p style="color:#71717a;font-size:14px;margin:0 0 24px">
+          You've been invited to join <strong>${orgName}</strong> on ShipLock as a <strong>${roleLabel}</strong>.
+        </p>
+        <a href="${inviteUrl}" style="display:inline-block;background:#6366f1;color:#fff;font-weight:600;font-size:14px;padding:12px 24px;border-radius:8px;text-decoration:none">
+          Accept invite →
+        </a>
+        <p style="color:#a1a1aa;font-size:12px;margin-top:24px">
+          This invite expires in ${expiresInDays} days. If you weren't expecting it, you can ignore this email.
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendAutoApproveNoticeEmail({
   to,
   projectName,

@@ -3,9 +3,11 @@ import { organizations, users, projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { updateOrg } from "@/lib/actions/orgs";
+import { inviteMember } from "@/lib/actions/invites";
 import { PageHeader, SectionLabel } from "@/components/dashboard-ui";
 import { SubmitButton } from "@/components/submit-button";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { InviteMemberDialog } from "@/components/dialogs/InviteMemberDialog";
 
 interface Props {
   params: Promise<{ org: string }>;
@@ -83,7 +85,7 @@ export default async function OrgSettingsPage({ params }: Props) {
                 style={{ background: "var(--card-footer)", borderBottom: "1px solid var(--border-footer)" }}
               >
                 <SectionLabel>Team</SectionLabel>
-                <button className="text-xs text-[var(--accent)] hover:underline">Invite member</button>
+                <InviteMemberDialog action={inviteMember.bind(null, orgData.id, orgData.slug)} />
               </div>
               <div className="divide-y divide-[var(--border)]">
                 {members.map((member) => (

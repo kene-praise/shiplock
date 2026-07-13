@@ -9,6 +9,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/review") ||
+    pathname.startsWith("/invite") ||
     pathname.startsWith("/preview") ||
     pathname.startsWith("/design") ||
     pathname.startsWith("/api/auth") ||
