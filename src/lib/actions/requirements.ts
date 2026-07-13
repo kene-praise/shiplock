@@ -218,10 +218,10 @@ Instructions:
 }`;
 
   const aiResponse = await callAI(prompt);
-  
+
   // Clean JSON response (in case of markdown blocks)
   const cleaned = aiResponse.replace(/```json\s*/i, "").replace(/```\s*$/, "").trim();
-  const parsed = JSON.parse(cleaned) as {
+  type ParsedImport = {
     requirements: {
       refId: string;
       title: string;
@@ -235,10 +235,20 @@ Instructions:
       priority: string;
     }[];
   };
+  let parsed: ParsedImport;
+  try {
+    parsed = JSON.parse(cleaned) as ParsedImport;
+  } catch {
+    throw new Error("The AI returned a response that couldn't be parsed. Try the import again.");
+  }
+  const parsedReqs = Array.isArray(parsed.requirements) ? parsed.requirements : [];
+  const parsedTasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+  if (parsedReqs.length === 0 && parsedTasks.length === 0) return;
 
-  // 1. Insert requirements
+  // 1. Insert requirements in one statement (neon-http has no transactions —
+  // batching keeps a failure from leaving a half-written import)
   const reqIdMap = new Map<string, string>(); // temp refId -> db UUID
-  
+
   // Get starting REQ number
   const existingReqs = await db
     .select({ refCode: requirements.refCode })
@@ -249,53 +259,48 @@ Instructions:
     return isNaN(n) ? m : Math.max(m, n);
   }, 0);
 
-  for (const r of parsed.requirements) {
-    maxReqNum += 1;
-    const refCode = `REQ-${String(maxReqNum).padStart(3, "0")}`;
-    const [inserted] = await db
+  if (parsedReqs.length > 0) {
+    const inserted = await db
       .insert(requirements)
-      .values({
-        projectId,
-        refCode,
-        title: r.title,
-        description: r.description,
-        source: "document",
-        classification: (r.classification || "mvp") as "mvp" | "post_mvp" | "out_of_scope",
-        status: "draft",
-      })
+      .values(
+        parsedReqs.map((r, i) => ({
+          projectId,
+          refCode: `REQ-${String(maxReqNum + i + 1).padStart(3, "0")}`,
+          title: r.title,
+          description: r.description,
+          source: "document" as const,
+          classification: (r.classification || "mvp") as "mvp" | "post_mvp" | "out_of_scope",
+          status: "draft" as const,
+        }))
+      )
       .returning({ id: requirements.id });
-    
-    if (inserted) {
-      reqIdMap.set(r.refId, inserted.id);
-    }
+    inserted.forEach((row, i) => reqIdMap.set(parsedReqs[i].refId, row.id));
+    maxReqNum += parsedReqs.length;
   }
 
-  // 2. Insert tasks
-  // Get starting task number
-  const existingTasks = await db
-    .select({ refCode: tasks.refCode })
-    .from(tasks)
-    .where(eq(tasks.projectId, projectId));
-  let maxTaskNum = existingTasks.reduce((m, t) => {
-    const n = parseInt(t.refCode.replace("T-", ""), 10);
-    return isNaN(n) ? m : Math.max(m, n);
-  }, 0);
+  // 2. Insert tasks in one statement
+  if (parsedTasks.length > 0) {
+    const existingTasks = await db
+      .select({ refCode: tasks.refCode })
+      .from(tasks)
+      .where(eq(tasks.projectId, projectId));
+    const maxTaskNum = existingTasks.reduce((m, t) => {
+      const n = parseInt(t.refCode.replace("T-", ""), 10);
+      return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
 
-  for (const t of parsed.tasks) {
-    maxTaskNum += 1;
-    const refCode = `T-${String(maxTaskNum).padStart(3, "0")}`;
-    const linkedReqId = t.reqRefId ? reqIdMap.get(t.reqRefId) : null;
-    
-    await db.insert(tasks).values({
-      projectId,
-      refCode,
-      title: t.title,
-      description: t.description || null,
-      ownerId: member.user.id,
-      priority: (t.priority || "p2_medium") as "p0_critical" | "p1_high" | "p2_medium" | "p3_low",
-      status: "not_started",
-      requirementId: linkedReqId || null,
-    });
+    await db.insert(tasks).values(
+      parsedTasks.map((t, i) => ({
+        projectId,
+        refCode: `T-${String(maxTaskNum + i + 1).padStart(3, "0")}`,
+        title: t.title,
+        description: t.description || null,
+        ownerId: member.user.id,
+        priority: (t.priority || "p2_medium") as "p0_critical" | "p1_high" | "p2_medium" | "p3_low",
+        status: "not_started" as const,
+        requirementId: (t.reqRefId ? reqIdMap.get(t.reqRefId) : null) || null,
+      }))
+    );
   }
 
   revalidatePath(`/${org}/${project}/requirements`);

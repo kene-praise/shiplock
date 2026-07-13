@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { dodItems, demoVideos, auditLogs } from "@/db/schema";
+import { dodItems, demoVideos, tasks, auditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireBuilder, requireProjectInOrg } from "./guard";
@@ -80,6 +80,24 @@ export async function updateDodItem(
   const demoVideoId = (formData.get("demoVideoId") as string) || null;
 
   if (!criterion) return;
+
+  // Linked task/video must belong to the same project as the DoD item.
+  if (taskId) {
+    const [t] = await db
+      .select({ projectId: tasks.projectId })
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+    if (!t || t.projectId !== oldItem.projectId) throw new Error("Unauthorized");
+  }
+  if (demoVideoId) {
+    const [v] = await db
+      .select({ projectId: demoVideos.projectId })
+      .from(demoVideos)
+      .where(eq(demoVideos.id, demoVideoId))
+      .limit(1);
+    if (!v || v.projectId !== oldItem.projectId) throw new Error("Unauthorized");
+  }
 
   const [newItem] = await db
     .update(dodItems)
