@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireBuilder, requireProjectInOrg } from "./guard";
+import type { FormState } from "./form-state";
 
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
@@ -23,8 +24,9 @@ export async function createTask(
   projectId: string,
   org: string,
   project: string,
+  _prevState: FormState,
   formData: FormData
-) {
+): Promise<FormState> {
   const member = await requireBuilder(org);
   await requireProjectInOrg(projectId, member.orgId);
 
@@ -34,7 +36,7 @@ export async function createTask(
   const week = (formData.get("week") as string)?.trim() || null;
   const requirementId = (formData.get("requirementId") as string) || null;
 
-  if (!title) return;
+  if (!title) return { error: "A task title is required." };
 
   const refCode = await nextRefCode(projectId);
 

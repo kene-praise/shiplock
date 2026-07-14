@@ -10,6 +10,7 @@ import { sendRequirementReviewEmail } from "@/lib/email";
 import { requireBuilder, requireProjectInOrg } from "./guard";
 import { callAI, AIUnavailableError } from "@/lib/ai";
 import type { ImportState } from "./requirements.types";
+import type { FormState } from "./form-state";
 
 // AI import runs on a shared (free-tier) provider key, so cap how many times a
 // single user can trigger it per rolling 24h — one abusive loop shouldn't be
@@ -34,8 +35,9 @@ export async function createRequirement(
   projectId: string,
   org: string,
   project: string,
+  _prevState: FormState,
   formData: FormData
-) {
+): Promise<FormState> {
   const member = await requireBuilder(org);
   await requireProjectInOrg(projectId, member.orgId);
 
@@ -45,7 +47,7 @@ export async function createRequirement(
   const sourceDetail = (formData.get("sourceDetail") as string)?.trim() || null;
   const classification = (formData.get("classification") as string) || "mvp";
 
-  if (!title || !description) return;
+  if (!title || !description) return { error: "Title and description are required." };
 
   const existing = await db
     .select({ id: requirements.id, title: requirements.title })

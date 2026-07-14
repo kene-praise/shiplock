@@ -13,7 +13,10 @@ export default async function NewScopeChangePage({ params }: Props) {
   const { org, project } = await params;
   const projectData = await getProjectForOrg(org, project);
   if (!projectData) notFound();
-  const action = createScopeChange.bind(null, projectData.id, org, project);
+  const action = async (formData: FormData) => {
+    "use server";
+    await createScopeChange(projectData.id, org, project, null, formData);
+  };
 
   return (
     <div className="px-5 py-4 max-w-2xl space-y-4">

@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { AppDialog, DialogBody, DialogFooter } from "@/components/ui/app-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import { Plus } from "@/components/icons";
+import type { FormState } from "@/lib/actions/form-state";
 
 interface Req { id: string; refCode: string; title: string; classification: string; }
 
 interface Props {
-  action: (formData: FormData) => Promise<void>;
+  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   reqs: Req[];
   todayISO: string;
 }
 
-function FormWatcher({ onSuccess }: { onSuccess: () => void }) {
+function FormWatcher({ onSuccess, hasError }: { onSuccess: () => void; hasError: boolean }) {
   const { pending } = useFormStatus();
   const wasPending = useRef(false);
 
@@ -23,15 +24,16 @@ function FormWatcher({ onSuccess }: { onSuccess: () => void }) {
       wasPending.current = true;
     } else if (wasPending.current && !pending) {
       wasPending.current = false;
-      onSuccess();
+      if (!hasError) onSuccess();
     }
-  }, [pending, onSuccess]);
+  }, [pending, onSuccess, hasError]);
 
   return null;
 }
 
 export function NewDemoDialog({ action, reqs, todayISO }: Props) {
   const [open, setOpen] = useState(false);
+  const [state, formAction] = useActionState(action, null);
 
   return (
     <>
@@ -40,9 +42,14 @@ export function NewDemoDialog({ action, reqs, todayISO }: Props) {
       </button>
 
       <AppDialog open={open} onClose={() => setOpen(false)} title="Add Demo Video" description="Paste a video URL and link it to the feature it demonstrates.">
-        <form action={action} className="flex flex-col min-h-0">
-          <FormWatcher onSuccess={() => setOpen(false)} />
+        <form action={formAction} className="flex flex-col min-h-0">
+          <FormWatcher onSuccess={() => setOpen(false)} hasError={!!state?.error} />
           <DialogBody className="space-y-4">
+            {state?.error && (
+              <div className="rounded-[var(--radius-md)] border border-[var(--danger)] bg-[var(--danger-muted)] px-3.5 py-2.5 text-[12.5px] text-[var(--danger)]">
+                {state.error}
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="field-label block">Title</label>
               <input name="title" required autoFocus placeholder="e.g. Risk register — evidence upload flow" className="field-input" />

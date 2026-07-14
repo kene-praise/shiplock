@@ -6,13 +6,15 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireBuilder, requireProjectInOrg } from "./guard";
+import type { FormState } from "./form-state";
 
 export async function createScopeChange(
   projectId: string,
   org: string,
   project: string,
+  _prevState: FormState,
   formData: FormData
-) {
+): Promise<FormState> {
   const member = await requireBuilder(org);
   await requireProjectInOrg(projectId, member.orgId);
 
@@ -24,7 +26,7 @@ export async function createScopeChange(
   const estimatedDaysRaw = formData.get("estimatedDays") as string;
   const estimatedDays = estimatedDaysRaw ? parseInt(estimatedDaysRaw, 10) : null;
 
-  if (!title || !description || !impactDescription) return;
+  if (!title || !description || !impactDescription) return { error: "Title, description, and impact are required." };
 
   const [newRow] = await db.insert(scopeChanges).values({
     projectId,

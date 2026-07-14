@@ -23,7 +23,10 @@ export default async function NewTaskPage({ params }: Props) {
     .from(requirements)
     .where(eq(requirements.projectId, projectData.id));
 
-  const action = createTask.bind(null, projectData.id, org, project);
+  const action = async (formData: FormData) => {
+    "use server";
+    await createTask(projectData.id, org, project, null, formData);
+  };
 
   return (
     <div className="px-5 py-4 max-w-xl space-y-4">

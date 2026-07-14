@@ -24,7 +24,10 @@ export default async function NewDemoPage({ params }: Props) {
     .orderBy(asc(requirements.refCode));
 
   const todayISO = new Date().toISOString().split("T")[0];
-  const action = createDemo.bind(null, projectData.id, org, project);
+  const action = async (formData: FormData) => {
+    "use server";
+    await createDemo(projectData.id, org, project, null, formData);
+  };
 
   return (
     <div className="px-5 py-4 max-w-xl space-y-4">

@@ -8,13 +8,15 @@ import { revalidatePath } from "next/cache";
 import { signReviewToken } from "@/lib/signed-url";
 import { sendDemoReviewEmail } from "@/lib/email";
 import { requireBuilder, requireProjectInOrg } from "./guard";
+import type { FormState } from "./form-state";
 
 export async function createDemo(
   projectId: string,
   org: string,
   project: string,
+  _prevState: FormState,
   formData: FormData
-) {
+): Promise<FormState> {
   const member = await requireBuilder(org);
   await requireProjectInOrg(projectId, member.orgId);
 
@@ -25,7 +27,7 @@ export async function createDemo(
   const durationSeconds = durationRaw ? parseInt(durationRaw, 10) : null;
   const requirementId = (formData.get("requirementId") as string) || null;
 
-  if (!title || !videoUrl) return;
+  if (!title || !videoUrl) return { error: "A title and video URL are required." };
 
   const [newRow] = await db.insert(demoVideos).values({
     projectId,
