@@ -179,22 +179,23 @@ export async function deleteRequirement(
   if (!req) return;
   await requireProjectInOrg(req.projectId, member.orgId);
 
-  // Clear references to prevent foreign key errors
-  await db.update(tasks).set({ requirementId: null }).where(eq(tasks.requirementId, requirementId));
-  await db.update(demoVideos).set({ requirementId: null }).where(eq(demoVideos.requirementId, requirementId));
-  await db.delete(clientReviews).where(eq(clientReviews.requirementId, requirementId));
-
-  // Insert audit log
-  await db.insert(auditLogs).values({
-    projectId: req.projectId,
-    userId: member.user.id,
-    action: "deleted",
-    entityType: "requirement",
-    entityId: req.id as string,
-    oldValue: req,
-  });
-
-  await db.delete(requirements).where(eq(requirements.id, requirementId));
+  // neon-http has no transactions — db.batch runs all statements atomically in a
+  // single request so a mid-sequence failure can't leave partial state. Clear
+  // foreign-key references first, log the audit, delete the primary row last.
+  await db.batch([
+    db.update(tasks).set({ requirementId: null }).where(eq(tasks.requirementId, requirementId)),
+    db.update(demoVideos).set({ requirementId: null }).where(eq(demoVideos.requirementId, requirementId)),
+    db.delete(clientReviews).where(eq(clientReviews.requirementId, requirementId)),
+    db.insert(auditLogs).values({
+      projectId: req.projectId,
+      userId: member.user.id,
+      action: "deleted",
+      entityType: "requirement",
+      entityId: req.id as string,
+      oldValue: req,
+    }),
+    db.delete(requirements).where(eq(requirements.id, requirementId)),
+  ]);
 
   revalidatePath(`/${org}/${project}/requirements`);
   redirect(`/${org}/${project}/requirements`);
