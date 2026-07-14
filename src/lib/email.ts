@@ -178,6 +178,46 @@ export async function sendAutoApproveNoticeEmail({
   });
 }
 
+export async function sendPingReminderEmail({
+  to,
+  projectName,
+  itemTitle,
+  itemType,
+  reviewUrl,
+}: {
+  to: string;
+  projectName: string;
+  itemTitle: string;
+  itemType: "requirement" | "demo";
+  reviewUrl: string;
+}) {
+  await sendEmailPayload({
+    from: FROM,
+    to,
+    subject: `[${projectName}] Reminder: ${itemTitle} still awaits your review`,
+    html: `
+      <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#09090b;background:#fff">
+        <div style="margin-bottom:24px">
+          <span style="font-weight:700;font-size:14px;letter-spacing:-0.02em">ShipLock</span>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px">Still awaiting your review</h1>
+        <p style="color:#71717a;font-size:14px;margin:0 0 24px">
+          A ${itemType} from <strong>${projectName}</strong> is still waiting on your response.
+        </p>
+        <div style="border:1px solid #e4e4e7;border-radius:12px;padding:16px;margin-bottom:24px">
+          <div style="font-size:16px;font-weight:600">${itemTitle}</div>
+        </div>
+        <a href="${reviewUrl}" style="display:inline-block;background:#6366f1;color:#fff;font-weight:600;font-size:14px;padding:12px 24px;border-radius:8px;text-decoration:none">
+          Review &amp; respond →
+        </a>
+        <p style="color:#a1a1aa;font-size:12px;margin-top:24px">
+          If you don't respond soon, this ${itemType} will be auto-approved on your behalf.
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function sendBuilderReviewNotificationEmail({
   to,
   projectName,
