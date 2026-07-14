@@ -5,11 +5,12 @@ import { getProjectForOrg } from "@/lib/project";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Circle, Video, CheckSquare, ClipboardCheck } from "@/components/icons";
-import { markDodMet, markDodUnmet, linkVideotoDod, updateDodItem } from "@/lib/actions/dod";
+import { markDodMet, markDodUnmet, linkVideotoDod, updateDodItem, createDodItem } from "@/lib/actions/dod";
 import { cn } from "@/lib/utils";
 import { PageHeader, SecondaryLink } from "@/components/dashboard-ui";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { EditDodDialog } from "@/components/dialogs/EditDodDialog";
+import { NewDodDialog } from "@/components/dialogs/NewDodDialog";
 
 interface Props {
   params: Promise<{ org: string; project: string }>;
@@ -82,6 +83,12 @@ export default async function DodPage({ params, searchParams }: Props) {
     .where(eq(tasks.projectId, projectData.id))
     .orderBy(tasks.refCode);
 
+  const requirementList = await db
+    .select({ id: requirements.id, refCode: requirements.refCode, title: requirements.title })
+    .from(requirements)
+    .where(eq(requirements.projectId, projectData.id))
+    .orderBy(requirements.refCode);
+
   let selectedDodData = null;
   if (selectedDodId) {
     const [dod] = await db.select().from(dodItems).where(eq(dodItems.id, selectedDodId)).limit(1);
@@ -122,6 +129,7 @@ export default async function DodPage({ params, searchParams }: Props) {
         meta="Acceptance criteria per feature — with implementing task and proof video"
       >
         <SecondaryLink href={`/${org}/${project}/demos`}>Manage videos</SecondaryLink>
+        <NewDodDialog action={createDodItem.bind(null, projectData.id, org, project)} requirements={requirementList} />
       </PageHeader>
 
       {/* Progress bar */}

@@ -1,10 +1,47 @@
 "use server";
 
 import { db } from "@/db";
-import { dodItems, demoVideos, tasks, auditLogs } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { dodItems, demoVideos, tasks, auditLogs, requirements } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireBuilder, requireProjectInOrg } from "./guard";
+
+export async function createDodItem(
+  projectId: string,
+  org: string,
+  project: string,
+  formData: FormData
+) {
+  const member = await requireBuilder(org);
+  await requireProjectInOrg(projectId, member.orgId);
+
+  const criterion = (formData.get("criterion") as string)?.trim();
+  if (!criterion) return;
+
+  const requirementId = (formData.get("requirementId") as string)?.trim();
+  if (!requirementId) return;
+
+  const [req] = await db
+    .select({ id: requirements.id })
+    .from(requirements)
+    .where(and(eq(requirements.id, requirementId), eq(requirements.projectId, projectId)))
+    .limit(1);
+  if (!req) return;
+
+  const existing = await db
+    .select({ dodRef: dodItems.dodRef })
+    .from(dodItems)
+    .where(eq(dodItems.projectId, projectId));
+  const max = existing.reduce((m, r) => {
+    const n = parseInt((r.dodRef ?? "").replace("DOD-", ""), 10);
+    return isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+  const dodRef = `DOD-${String(max + 1).padStart(3, "0")}`;
+
+  await db.insert(dodItems).values({ projectId, requirementId, dodRef, criterion, met: false });
+
+  revalidatePath(`/${org}/${project}/dod`);
+}
 
 async function requireDodItem(dodItemId: string, org: string) {
   const member = await requireBuilder(org);

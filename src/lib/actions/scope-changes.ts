@@ -26,7 +26,7 @@ export async function createScopeChange(
 
   if (!title || !description || !impactDescription) return;
 
-  await db.insert(scopeChanges).values({
+  const [newRow] = await db.insert(scopeChanges).values({
     projectId,
     title,
     description,
@@ -35,6 +35,15 @@ export async function createScopeChange(
     impactDescription,
     estimatedDays,
     status: "pending",
+  }).returning();
+
+  await db.insert(auditLogs).values({
+    projectId,
+    userId: member.user.id,
+    action: "created",
+    entityType: "scope_change",
+    entityId: newRow.id,
+    newValue: newRow,
   });
 
   revalidatePath(`/${org}/${project}/scope-changes`);

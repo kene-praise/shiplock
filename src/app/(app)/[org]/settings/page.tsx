@@ -11,6 +11,7 @@ import { InviteMemberDialog } from "@/components/dialogs/InviteMemberDialog";
 
 interface Props {
   params: Promise<{ org: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 const roleColors: Record<string, string> = {
@@ -19,8 +20,10 @@ const roleColors: Record<string, string> = {
   client:  "text-[var(--success)] bg-[var(--success-muted)]",
 };
 
-export default async function OrgSettingsPage({ params }: Props) {
+export default async function OrgSettingsPage({ params, searchParams }: Props) {
   const { org } = await params;
+  const sParams = await searchParams;
+  const slugTaken = sParams.error === "slug-taken";
 
   const [orgData] = await db.select().from(organizations).where(eq(organizations.slug, org)).limit(1);
   if (!orgData) notFound();
@@ -41,6 +44,12 @@ export default async function OrgSettingsPage({ params }: Props) {
       <main className="flex-1 min-w-0 overflow-y-auto">
           <div className="w-full max-w-2xl mx-auto px-8 py-6 space-y-6">
             <PageHeader title="Org Settings" meta={orgData.name} />
+
+            {slugTaken && (
+              <div className="rounded-[var(--radius-lg)] border border-[var(--danger)]/30 bg-[var(--danger-muted)] px-4 py-3 text-[12.5px] text-[var(--danger)]">
+                That slug is already taken by another organization. Pick a different one.
+              </div>
+            )}
 
             {/* Org info */}
             <section

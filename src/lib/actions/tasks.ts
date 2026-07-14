@@ -38,7 +38,7 @@ export async function createTask(
 
   const refCode = await nextRefCode(projectId);
 
-  await db.insert(tasks).values({
+  const [newRow] = await db.insert(tasks).values({
     projectId,
     refCode,
     title,
@@ -48,6 +48,15 @@ export async function createTask(
     status: "not_started",
     week,
     requirementId: requirementId || null,
+  }).returning();
+
+  await db.insert(auditLogs).values({
+    projectId,
+    userId: member.user.id,
+    action: "created",
+    entityType: "task",
+    entityId: newRow.id,
+    newValue: newRow,
   });
 
   revalidatePath(`/${org}/${project}/tasks`);
@@ -83,6 +92,16 @@ export async function updateTask(
 
   if (!title) return;
 
+  const timestamps: { completedAt?: Date | null; startedAt?: Date } = {};
+  if (status === "done" && oldTask.status !== "done") {
+    timestamps.completedAt = new Date();
+  } else if (status !== "done" && oldTask.status === "done") {
+    timestamps.completedAt = null;
+  }
+  if (status === "in_progress" && oldTask.startedAt === null) {
+    timestamps.startedAt = new Date();
+  }
+
   const [newTask] = await db
     .update(tasks)
     .set({
@@ -95,6 +114,7 @@ export async function updateTask(
       blockedReason,
       dodRef,
       requirementId: requirementId || null,
+      ...timestamps,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, id))

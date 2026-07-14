@@ -27,7 +27,7 @@ export async function createDemo(
 
   if (!title || !videoUrl) return;
 
-  await db.insert(demoVideos).values({
+  const [newRow] = await db.insert(demoVideos).values({
     projectId,
     title,
     videoUrl,
@@ -36,6 +36,15 @@ export async function createDemo(
     requirementId: requirementId || undefined,
     sentToClient: false,
     clientStatus: "pending",
+  }).returning();
+
+  await db.insert(auditLogs).values({
+    projectId,
+    userId: member.user.id,
+    action: "created",
+    entityType: "demo",
+    entityId: newRow.id,
+    newValue: newRow,
   });
 
   revalidatePath(`/${org}/${project}/demos`);

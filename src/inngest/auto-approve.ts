@@ -1,6 +1,6 @@
 import { inngest } from "./client";
 import { db } from "@/db";
-import { clientPings, requirements, demoVideos, users, projects } from "@/db/schema";
+import { clientPings, requirements, demoVideos, users, projects, auditLogs } from "@/db/schema";
 import { eq, and, lt } from "drizzle-orm";
 import { sendAutoApproveNoticeEmail } from "@/lib/email";
 
@@ -35,6 +35,15 @@ export const autoApproveCheck = inngest.createFunction(
               .set({ status: "approved", autoApproved: true, clientApprovedAt: now, updatedAt: now })
               .where(eq(requirements.id, req.id));
 
+            await db.insert(auditLogs).values({
+              projectId: ping.projectId,
+              userId: null,
+              action: "auto_approved",
+              entityType: "requirement",
+              entityId: req.id,
+              metadata: { reason: "No client response within 48h" },
+            });
+
             // Notify client
             const [proj] = await db.select({ name: projects.name, orgId: projects.orgId }).from(projects).where(eq(projects.id, ping.projectId)).limit(1);
             if (proj) {
@@ -58,6 +67,15 @@ export const autoApproveCheck = inngest.createFunction(
               .update(demoVideos)
               .set({ clientStatus: "approved", autoApproved: true, clientResponseAt: now, updatedAt: now })
               .where(eq(demoVideos.id, demo.id));
+
+            await db.insert(auditLogs).values({
+              projectId: ping.projectId,
+              userId: null,
+              action: "auto_approved",
+              entityType: "demo",
+              entityId: demo.id,
+              metadata: { reason: "No client response within 48h" },
+            });
 
             const [proj] = await db.select({ name: projects.name, orgId: projects.orgId }).from(projects).where(eq(projects.id, ping.projectId)).limit(1);
             if (proj) {

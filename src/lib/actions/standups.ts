@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { standups } from "@/db/schema";
+import { standups, auditLogs } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireBuilder, requireProjectInOrg } from "./guard";
@@ -23,13 +23,22 @@ export async function createStandup(
 
   const today = new Date().toISOString().split("T")[0];
 
-  await db.insert(standups).values({
+  const [newRow] = await db.insert(standups).values({
     projectId,
     userId: member.user.id,
     date: today,
     didYesterday,
     doingToday,
     blockers,
+  }).returning();
+
+  await db.insert(auditLogs).values({
+    projectId,
+    userId: member.user.id,
+    action: "created",
+    entityType: "standup",
+    entityId: newRow.id,
+    newValue: newRow,
   });
 
   revalidatePath(`/${org}/${project}/standups`);

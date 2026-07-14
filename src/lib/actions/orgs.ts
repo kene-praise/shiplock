@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { organizations, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -57,6 +57,15 @@ export async function updateOrg(orgId: string, currentSlug: string, formData: Fo
   const slug = (formData.get("slug") as string)?.trim().toLowerCase().replace(/\s+/g, "-");
 
   if (!name || !slug) return;
+
+  if (slug !== currentSlug) {
+    const [taken] = await db
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(and(eq(organizations.slug, slug), ne(organizations.id, orgId)))
+      .limit(1);
+    if (taken) redirect(`/${currentSlug}/settings?error=slug-taken`);
+  }
 
   await db
     .update(organizations)

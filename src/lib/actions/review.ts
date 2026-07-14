@@ -9,6 +9,7 @@ import {
   scopeChanges,
   users,
   projects,
+  auditLogs,
 } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { verifyReviewToken } from "@/lib/signed-url";
@@ -127,6 +128,15 @@ export async function submitRequirementReview(
     })
     .where(eq(requirements.id, payload.referenceId));
 
+  await db.insert(auditLogs).values({
+    projectId: payload.projectId,
+    userId: null,
+    action: decision,
+    entityType: "requirement",
+    entityId: req.id,
+    metadata: { reviewerName, reviewerEmail, comment, scopeCreepDetected },
+  });
+
   await db
     .update(clientPings)
     .set({ status: "responded", responseAt: new Date() })
@@ -224,6 +234,15 @@ export async function submitDemoReview(
       updatedAt: new Date(),
     })
     .where(eq(demoVideos.id, payload.referenceId));
+
+  await db.insert(auditLogs).values({
+    projectId: payload.projectId,
+    userId: null,
+    action: decision,
+    entityType: "demo",
+    entityId: demo.id,
+    metadata: { reviewerName, reviewerEmail, comment },
+  });
 
   await db
     .update(clientPings)
