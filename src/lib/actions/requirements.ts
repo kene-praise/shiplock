@@ -16,6 +16,8 @@ import type { ImportState } from "./requirements.types";
 // able to exhaust the daily quota for everyone.
 const MAX_IMPORTS_PER_DAY = 10;
 
+const normTitle = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+
 async function nextRefCode(projectId: string): Promise<string> {
   const existing = await db
     .select({ refCode: requirements.refCode })
@@ -45,17 +47,38 @@ export async function createRequirement(
 
   if (!title || !description) return;
 
+  const existing = await db
+    .select({ id: requirements.id, title: requirements.title })
+    .from(requirements)
+    .where(eq(requirements.projectId, projectId));
+  const duplicate = existing.find((r) => normTitle(r.title) === normTitle(title));
+  if (duplicate) {
+    redirect(`/${org}/${project}/requirements?requirement=${duplicate.id}`);
+  }
+
   const refCode = await nextRefCode(projectId);
 
-  await db.insert(requirements).values({
+  const [newRow] = await db
+    .insert(requirements)
+    .values({
+      projectId,
+      refCode,
+      title,
+      description,
+      source: source as "document" | "meeting" | "email" | "verbal",
+      sourceDetail,
+      classification: classification as "mvp" | "post_mvp" | "out_of_scope",
+      status: "draft",
+    })
+    .returning();
+
+  await db.insert(auditLogs).values({
     projectId,
-    refCode,
-    title,
-    description,
-    source: source as "document" | "meeting" | "email" | "verbal",
-    sourceDetail,
-    classification: classification as "mvp" | "post_mvp" | "out_of_scope",
-    status: "draft",
+    userId: member.user.id,
+    action: "created",
+    entityType: "requirement",
+    entityId: newRow.id,
+    newValue: newRow,
   });
 
   revalidatePath(`/${org}/${project}/requirements`);
@@ -293,9 +316,9 @@ Instructions:
   // batching keeps a failure from leaving a half-written import)
   const reqIdMap = new Map<string, string>(); // temp refId -> db UUID
 
-  // Get starting REQ number
+  // Get starting REQ number + existing titles for dedupe
   const existingReqs = await db
-    .select({ refCode: requirements.refCode })
+    .select({ id: requirements.id, refCode: requirements.refCode, title: requirements.title })
     .from(requirements)
     .where(eq(requirements.projectId, projectId));
   let maxReqNum = existingReqs.reduce((m, r) => {
@@ -303,11 +326,36 @@ Instructions:
     return isNaN(n) ? m : Math.max(m, n);
   }, 0);
 
-  if (parsedReqs.length > 0) {
+  // Map normalized title -> existing/earlier requirement id, so duplicates
+  // (against the project or within this same batch) reuse the existing row.
+  const titleToId = new Map<string, string>();
+  existingReqs.forEach((r) => titleToId.set(normTitle(r.title), r.id));
+
+  // refIds seen earlier in this batch, keyed by normalized title, so a repeat
+  // title within the same import resolves to the first occurrence's refId.
+  const batchTitleToRefId = new Map<string, string>();
+  const newReqs: typeof parsedReqs = [];
+  const dupRefIds: { refId: string; key: string }[] = [];
+  for (const r of parsedReqs) {
+    const key = normTitle(r.title);
+    const existingId = titleToId.get(key);
+    const earlierRefId = batchTitleToRefId.get(key);
+    if (existingId) {
+      reqIdMap.set(r.refId, existingId);
+    } else if (earlierRefId) {
+      // Points at an earlier new req in this batch — resolve after insert.
+      dupRefIds.push({ refId: r.refId, key });
+    } else {
+      batchTitleToRefId.set(key, r.refId);
+      newReqs.push(r);
+    }
+  }
+
+  if (newReqs.length > 0) {
     const inserted = await db
       .insert(requirements)
       .values(
-        parsedReqs.map((r, i) => ({
+        newReqs.map((r, i) => ({
           projectId,
           refCode: `REQ-${String(maxReqNum + i + 1).padStart(3, "0")}`,
           title: r.title,
@@ -318,8 +366,18 @@ Instructions:
         }))
       )
       .returning({ id: requirements.id });
-    inserted.forEach((row, i) => reqIdMap.set(parsedReqs[i].refId, row.id));
-    maxReqNum += parsedReqs.length;
+    inserted.forEach((row, i) => {
+      reqIdMap.set(newReqs[i].refId, row.id);
+      titleToId.set(normTitle(newReqs[i].title), row.id);
+    });
+    maxReqNum += newReqs.length;
+  }
+
+  // Resolve within-batch duplicates to the first occurrence's inserted id.
+  for (const d of dupRefIds) {
+    const firstRefId = batchTitleToRefId.get(d.key);
+    const resolved = firstRefId ? reqIdMap.get(firstRefId) : undefined;
+    if (resolved) reqIdMap.set(d.refId, resolved);
   }
 
   // 2. Insert tasks in one statement
