@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useRef, useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import { AppDialog, DialogBody, DialogFooter } from "@/components/ui/app-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import { Plus } from "@/components/icons";
@@ -29,7 +29,7 @@ function FormWatcher({ onSuccess, hasError }: { onSuccess: () => void; hasError:
 
 export function NewRequirementDialog({ action }: Props) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useActionState(action, null);
+  const [state, formAction] = useFormState(action, null);
 
   return (
     <>

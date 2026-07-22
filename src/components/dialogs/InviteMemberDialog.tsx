@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFormState } from "react-dom";
 import { AppDialog, DialogBody, DialogFooter } from "@/components/ui/app-dialog";
 import { SubmitButton } from "@/components/submit-button";
 import type { InviteState } from "@/lib/actions/invites.types";
@@ -11,7 +12,7 @@ interface Props {
 
 export function InviteMemberDialog({ action }: Props) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useActionState(action, null);
+  const [state, formAction] = useFormState(action, null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
